@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Gorba City - Fixed Controls</title>
+<title>Gorba City - Realistic BMW Driving</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:sans-serif;touch-action:none}
   canvas{display:block;width:100vw;height:100vh}
 
-  /* ROTATE PHONE OVERLAY */
   #rotateOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}
   #rotateOverlay h2{margin-bottom:10px;font-size:20px;color:#ff9900}
   #rotateOverlay p{font-size:14px;color:#ccc;margin-bottom:20px}
@@ -28,16 +27,15 @@
   #btnRight{grid-column:3;grid-row:2}
   #btnDown{grid-column:2;grid-row:3}
 
-  /* CAR CONTROLS */
-  #enterCarBtn{position:fixed;bottom:140px;left:25px;z-index:25;background:rgba(255,165,0,0.85);border:none;color:#fff;padding:12px 18px;border-radius:25px;font-weight:bold;display:none;font-size:14px;box-shadow:0 0 15px rgba(255,165,0,0.4)}
-  
+  /* CAR INTERACTION BUTTONS */
+  #actionBtns{position:fixed;bottom:140px;left:25px;z-index:25;display:flex;flex-direction:column;gap:10px}
+  .actBtn{background:rgba(255,165,0,0.85);border:none;color:#fff;padding:10px 16px;border-radius:20px;font-weight:bold;font-size:13px;display:none;box-shadow:0 0 10px rgba(0,0,0,0.5)}
+
   #carSteering{position:fixed;bottom:25px;left:25px;z-index:25;display:none;gap:15px}
   .steerBtn{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-  .steerBtn:active{background:rgba(255,255,255,0.5)}
 
   #carPedals{position:fixed;bottom:20px;right:25px;z-index:25;display:none;flex-direction:column;gap:10px}
   .pedal{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-  .pedal:active{background:rgba(255,255,255,0.5)}
 
   #speedometerUI{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,0.85);color:#00ffcc;padding:8px 20px;border-radius:20px;font-family:monospace;font-size:16px;border:1px solid #00ffcc;display:none}
 
@@ -52,13 +50,13 @@
 
 <div id="rotateOverlay">
   <h2>🔄 لطفا صفحه گوشی را افقی کنید</h2>
-  <p>برای بهترین تجربه بازی، چرخش خودکار گوشی را فعال کرده و آن را افقی بگیرید.</p>
+  <p>برای بهترین تجربه رانندگی با BMW، گوشی را افقی بگیرید.</p>
   <button id="startBtn">شروع بازی 🎮</button>
 </div>
 
 <div id="crosshair">+</div>
 <div id="lookArea"></div>
-<div id="speedometerUI"><span id="speedVal">0</span> KM/H | <span id="engineLvlVal">LVL 1</span></div>
+<div id="speedometerUI"><span id="speedVal">0</span> KM/H | ENGINE: <span id="engineLvlVal">LVL 1</span></div>
 
 <!-- WALK D-PAD -->
 <div id="dpad">
@@ -69,8 +67,14 @@
   <div class="dbtn" id="btnDown">▼</div>
 </div>
 
-<!-- CAR UI -->
-<button id="enterCarBtn">🚗 نشستن در ماشین</button>
+<!-- ACTIONS -->
+<div id="actionBtns">
+  <button class="actBtn" id="enterCarBtn">🏎️ سوار شدن در BMW</button>
+  <button class="actBtn" id="hoodBtn">🔧 باز/بستن کاپوت</button>
+  <button class="actBtn" id="upgradeEngineBtn">⚡ تعویض موتور</button>
+</div>
+
+<!-- CAR CONTROLS -->
 <div id="carSteering">
   <div class="steerBtn" id="steerLeft">◄</div>
   <div class="steerBtn" id="steerRight">►</div>
@@ -84,7 +88,7 @@
 <div id="hudContainer">
   <div id="hotbar">
     <div class="slot active" data-idx="0">🪓</div>
-    <div class="slot" data-idx="1"></div>
+    <div class="slot" data-idx="1" id="engineSlot"></div>
     <div class="slot" data-idx="2"></div>
     <div class="slot" data-idx="3"></div>
   </div>
@@ -97,10 +101,10 @@ document.getElementById('startBtn').addEventListener('click', () => {
 });
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x7ec0ee);
-scene.fog = new THREE.FogExp2(0x7ec0ee, 0.005);
+scene.background = new THREE.Color(0x6ca6cd);
+scene.fog = new THREE.FogExp2(0x6ca6cd, 0.003);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 800);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.rotation.order = 'YXZ';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -116,55 +120,120 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// LIGHTS
-const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+// LIGHTING & ENVIRONMENT
+const ambient = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xfffaed, 1.2);
-sun.position.set(100, 150, 50);
+const sun = new THREE.DirectionalLight(0xfffae6, 1.3);
+sun.position.set(150, 200, 100);
 sun.castShadow = true;
 scene.add(sun);
 
+// SCENERY: CLOUDS & TREES
+function createCloud() {
+  const cloudGroup = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+  for(let i=0; i<5; i++){
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(8 + Math.random()*6), mat);
+    m.position.set(i*6, Math.random()*3, Math.random()*4);
+    cloudGroup.add(m);
+  }
+  return cloudGroup;
+}
+for(let i=0; i<20; i++){
+  const c = createCloud();
+  c.position.set((Math.random()-0.5)*800, 80 + Math.random()*40, (Math.random()-0.5)*800);
+  scene.add(c);
+}
+
+// MINECRAFT GRASS TEXTURE GENERATOR
+function createMinecraftGrassTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 16; canvas.height = 16;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#4a8528'; ctx.fillRect(0, 0, 16, 16);
+  for (let x = 0; x < 16; x++) {
+    for (let y = 0; y < 16; y++) {
+      if (Math.random() > 0.6) {
+        ctx.fillStyle = Math.random() > 0.5 ? '#3c6e1f' : '#5ba032';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  return texture;
+}
+const mcGrassTex = createMinecraftGrassTexture();
+
 // INFINITE ROAD & TERRAIN SYSTEM
 const chunks = new Map();
-const chunkSize = 120;
-const groundColors = [0x3d6b2c, 0x427330, 0x386128, 0x487c35];
-const grassColors = [0x55aa33, 0x66bb44, 0x449922, 0x77cc55];
+const chunkSize = 140;
+const worldEngineItems = [];
+
+const grassMat = new THREE.MeshLambertMaterial({ map: mcGrassTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+const grassPlane1 = new THREE.PlaneGeometry(1, 1);
+const grassPlane2 = new THREE.PlaneGeometry(1, 1);
+grassPlane2.rotateY(Math.PI / 2);
+
+// TREE CREATION
+function createTree() {
+  const tree = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0x4a2e18 }));
+  trunk.position.y = 2;
+  const foliage = new THREE.Mesh(new THREE.ConeGeometry(2.5, 6, 8), new THREE.MeshLambertMaterial({ color: 0x2e5c1e }));
+  foliage.position.y = 5;
+  tree.add(trunk, foliage);
+  return tree;
+}
 
 function createChunk(cx, cz) {
   const group = new THREE.Group();
   
-  const color = groundColors[Math.abs(cx + cz) % groundColors.length];
   const gGeo = new THREE.PlaneGeometry(chunkSize, chunkSize);
-  const gMat = new THREE.MeshStandardMaterial({ color, roughness: 0.9 });
+  const gMat = new THREE.MeshStandardMaterial({ color: 0x3b6628, roughness: 0.9 });
   const ground = new THREE.Mesh(gGeo, gMat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(cx * chunkSize, 0, cz * chunkSize);
-  ground.receiveShadow = true;
   group.add(ground);
 
+  // Smooth Curved Road
   const roadPoints = [];
-  for (let z = -chunkSize/2; z <= chunkSize/2; z += 15) {
+  for (let z = -chunkSize/2; z <= chunkSize/2; z += 20) {
     const worldZ = cz * chunkSize + z;
-    const worldX = cx * chunkSize + Math.sin(worldZ * 0.02) * 20;
+    const worldX = cx * chunkSize + Math.sin(worldZ * 0.015) * 25;
     roadPoints.push(new THREE.Vector3(worldX, 0.03, worldZ));
   }
   const curve = new THREE.CatmullRomCurve3(roadPoints);
-  const roadGeo = new THREE.TubeGeometry(curve, 15, 4.5, 8, false);
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-  const road = new THREE.Mesh(roadGeo, roadMat);
+  const roadGeo = new THREE.TubeGeometry(curve, 20, 5.0, 8, false);
+  const road = new THREE.Mesh(roadGeo, new THREE.MeshStandardMaterial({ color: 0x222225, roughness: 0.6 }));
   road.scale.set(1, 0.01, 1);
-  road.receiveShadow = true;
   group.add(road);
 
-  const grassGeo = new THREE.ConeGeometry(0.15, 0.6, 3);
-  for (let i = 0; i < 45; i++) {
-    const gColor = grassColors[Math.floor(Math.random() * grassColors.length)];
-    const grassMat = new THREE.MeshBasicMaterial({ color: gColor });
-    const grass = new THREE.Mesh(grassGeo, grassMat);
+  // Dense Grass & Side Trees
+  for (let i = 0; i < 90; i++) {
+    const grass = new THREE.Mesh(grassPlane1, grassMat);
     const rx = (Math.random() - 0.5) * chunkSize + cx * chunkSize;
     const rz = (Math.random() - 0.5) * chunkSize + cz * chunkSize;
-    grass.position.set(rx, 0.3, rz);
+    grass.position.set(rx, 0.5, rz);
     group.add(grass);
+
+    if(i < 12){
+      const tree = createTree();
+      tree.position.set(rx + (Math.random()>0.5?12:-12), 0, rz);
+      group.add(tree);
+    }
+  }
+
+  // Engine pickups on side road
+  if (Math.random() > 0.4) {
+    const engLvl = Math.floor(Math.random() * 3) + 2;
+    const engBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.8), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.8 }));
+    const engX = cx * chunkSize + (Math.random() > 0.5 ? 7 : -7);
+    const engZ = cz * chunkSize;
+    engBox.position.set(engX, 0.4, engZ);
+    engBox.userData = { isEngineItem: true, level: engLvl };
+    group.add(engBox);
+    worldEngineItems.push(engBox);
   }
 
   scene.add(group);
@@ -185,84 +254,103 @@ function updateChunks(playerX, playerZ) {
   }
 }
 
-// HAND & AXE ONLY
+// HAND & CAMERA SETUP
 const handGroup = new THREE.Group();
-const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 });
-const armMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.45, 10), skinMat);
-armMesh.rotation.x = Math.PI / 3;
-armMesh.position.set(0, -0.1, 0.1);
+const armMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.45, 10), new THREE.MeshStandardMaterial({ color: 0xd2b48c }));
+armMesh.rotation.x = Math.PI / 3; armMesh.position.set(0, -0.1, 0.1);
 handGroup.add(armMesh);
-
-const axeGroup = new THREE.Group();
-const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35), new THREE.MeshStandardMaterial({color: 0x5c4033}));
-const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.02), new THREE.MeshStandardMaterial({color: 0x888888, metalness: 0.8}));
-blade.position.set(0.05, 0.12, 0);
-axeGroup.add(handle, blade);
-axeGroup.position.set(0.05, 0.05, -0.2);
-handGroup.add(axeGroup);
-
 handGroup.position.set(0.25, -0.22, -0.35);
 camera.add(handGroup);
 scene.add(camera);
 
-// CAR CREATION
+// REALISTIC BMW STYLE CAR
 const carGroup = new THREE.Group();
-const carPaintMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.7, roughness: 0.2 });
+const bmwPaint = new THREE.MeshStandardMaterial({ color: 0x800020, metalness: 0.8, roughness: 0.2 }); // Deep Metallic Red
 const chromeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.1 });
-const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, roughness: 0.1, transmission: 0.9 });
+const darkInterior = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.8 });
 
-const carBase = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.75, 4.8), carPaintMat);
-carBase.position.y = 0.75;
-carBase.castShadow = true;
-carGroup.add(carBase);
+// CURVED BMW BODY (Extruded Cylinder Body shape)
+const bodyGeo = new THREE.CylinderGeometry(1.25, 1.3, 4.6, 16);
+bodyGeo.rotateX(Math.PI / 2);
+bodyGeo.scale(1, 0.45, 1);
+const carBody = new THREE.Mesh(bodyGeo, bmwPaint);
+carBody.position.y = 0.65;
+carGroup.add(carBody);
 
-// Front Grille & Bumper (Facing -Z in local coords)
-const grille = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 0.1), chromeMat);
-grille.position.set(0, 0.7, -2.42);
-const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.15, 0.2), chromeMat);
-frontBumper.position.set(0, 0.45, -2.45);
-carGroup.add(grille, frontBumper);
+// BMW Iconic Kidney Grille
+const kidneyL = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 8, 16), chromeMat);
+kidneyL.position.set(-0.22, 0.65, -2.32); kidneyL.scale.set(0.8, 1.4, 1);
+const kidneyR = kidneyL.clone(); kidneyR.position.x = 0.22;
+carGroup.add(kidneyL, kidneyR);
 
-const cabinWindshield = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.85, 2.2), glassMat);
-cabinWindshield.position.set(0, 1.45, 0.2);
-carGroup.add(cabinWindshield);
+// Headlights (Angle Eyes)
+const lightGeo = new THREE.SphereGeometry(0.12, 12, 12);
+const lightMat = new THREE.MeshBasicMaterial({ color: 0x99ffff });
+const headL = new THREE.Mesh(lightGeo, lightMat); headL.position.set(-0.85, 0.68, -2.25);
+const headR = headL.clone(); headR.position.x = 0.85;
+carGroup.add(headL, headR);
 
-const dashBoard = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.6), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-dashBoard.position.set(0, 1.1, -0.6);
+// HOOD & ENGINE BAY
+const hoodGroup = new THREE.Group();
+const hoodMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.6), bmwPaint);
+hoodMesh.position.set(0, 0, -0.8);
+hoodGroup.add(hoodMesh);
+hoodGroup.position.set(0, 0.9, -0.7);
+carGroup.add(hoodGroup);
+
+let currentEngineLevel = 1;
+const engineMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.9), chromeMat);
+engineMesh.position.set(0, 0.65, -1.5);
+carGroup.add(engineMesh);
+
+// REALISTIC CABIN & DASHBOARD
+const cabinGeo = new THREE.CylinderGeometry(1.05, 1.2, 2.2, 12);
+cabinGeo.rotateX(Math.PI / 2);
+cabinGeo.scale(0.95, 0.55, 1);
+const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x111111, transparent: true, opacity: 0.45, roughness: 0.1 });
+const cabinGlass = new THREE.Mesh(cabinGeo, glassMat);
+cabinGlass.position.set(0, 1.25, 0.2);
+carGroup.add(cabinGlass);
+
+// Curved Dashboard & Center Console
+const dashBoard = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 2.0, 12), darkInterior);
+dashBoard.rotation.z = Math.PI / 2;
+dashBoard.position.set(0, 0.95, -0.75);
 carGroup.add(dashBoard);
 
-const steeringGroup = new THREE.Group();
-const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.025, 8, 24), chromeMat);
-const centerMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-centerMesh.rotation.x = Math.PI / 2;
-steeringGroup.add(ringMesh, centerMesh);
-steeringGroup.position.set(-0.55, 1.22, -0.35);
-steeringGroup.rotation.x = 0.35;
-carGroup.add(steeringGroup);
+// Sports BMW Steering Wheel
+const bmwSteeringGroup = new THREE.Group();
+const stRing = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 10, 24), darkInterior);
+const stCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 12), chromeMat);
+stCenter.rotation.x = Math.PI / 2;
+bmwSteeringGroup.add(stRing, stCenter);
+bmwSteeringGroup.position.set(-0.55, 1.05, -0.55);
+bmwSteeringGroup.rotation.x = 0.35;
+carGroup.add(bmwSteeringGroup);
 
-const seatMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
-const driverSeat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.7), seatMat);
-driverSeat.position.set(-0.55, 0.85, 0.2);
+// Leather Seats
+const seatGeo = new THREE.BoxGeometry(0.65, 0.75, 0.65);
+const driverSeat = new THREE.Mesh(seatGeo, darkInterior);
+driverSeat.position.set(-0.55, 0.65, 0.2);
 const passSeat = driverSeat.clone(); passSeat.position.x = 0.55;
 carGroup.add(driverSeat, passSeat);
 
-let engineLevel = 1;
-const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.32, 20);
-const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.8 });
-[[-1.2,0.42,1.5], [1.2,0.42,1.5], [-1.2,0.42,-1.5], [1.2,0.42,-1.5]].forEach(p => {
+// Detailed Alloy Wheels
+const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.32, 24);
+const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.5 });
+[[-1.2,0.42,1.4], [1.2,0.42,1.4], [-1.2,0.42,-1.4], [1.2,0.42,-1.4]].forEach(p => {
   const w = new THREE.Mesh(wheelGeo, wheelMat);
   w.rotation.z = Math.PI / 2;
   w.position.set(...p);
-  w.castShadow = true;
   carGroup.add(w);
 });
 
 carGroup.position.set(0, 0, 10);
 scene.add(carGroup);
 
-// CONTROLS STATE
-const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false };
-const carState = { speed: 0, steerAngle: 0, gas: false, brake: false, left: false, right: false };
+// CONTROLS & STATE
+const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false, inventoryEngine: null };
+const carState = { speed: 0, steerAngle: 0, hoodOpen: false, gas: false, brake: false, left: false, right: false };
 const moveState = { fwd: false, bwd: false, lft: false, rgt: false };
 
 const bindBtn = (id, key) => {
@@ -284,19 +372,39 @@ const carPedalBind = (id, action) => {
 carPedalBind('gasBtn', 'gas'); carPedalBind('brakeBtn', 'brake');
 carPedalBind('steerLeft', 'left'); carPedalBind('steerRight', 'right');
 
+// HOOD TOGGLE
+const hoodBtn = document.getElementById('hoodBtn');
+hoodBtn.addEventListener('click', () => {
+  carState.hoodOpen = !carState.hoodOpen;
+  hoodGroup.rotation.x = carState.hoodOpen ? -0.85 : 0;
+});
+
+// ENGINE UPGRADE
+const upgradeEngineBtn = document.getElementById('upgradeEngineBtn');
+upgradeEngineBtn.addEventListener('click', () => {
+  if (player.inventoryEngine) {
+    currentEngineLevel = player.inventoryEngine;
+    player.inventoryEngine = null;
+    document.getElementById('engineSlot').textContent = '';
+    alert(`موتور BMW با موفقیت به لول ${currentEngineLevel} ارتقا یافت! 🚀🏎️`);
+  }
+});
+
 // ENTER / EXIT CAR
 const enterCarBtn = document.getElementById('enterCarBtn');
 enterCarBtn.addEventListener('click', () => {
   player.inCar = !player.inCar;
   if(player.inCar){
     enterCarBtn.textContent = '🚪 پیاده شدن';
+    hoodBtn.style.display = 'none';
+    upgradeEngineBtn.style.display = 'none';
     document.getElementById('dpad').style.display = 'none';
     document.getElementById('carPedals').style.display = 'flex';
     document.getElementById('carSteering').style.display = 'flex';
     document.getElementById('speedometerUI').style.display = 'block';
     handGroup.visible = false;
   } else {
-    enterCarBtn.textContent = '🚗 نشستن در ماشین';
+    enterCarBtn.textContent = '🏎️ سوار شدن در BMW';
     document.getElementById('dpad').style.display = 'grid';
     document.getElementById('carPedals').style.display = 'none';
     document.getElementById('carSteering').style.display = 'none';
@@ -318,7 +426,7 @@ lookArea.addEventListener('pointermove', e => {
   lx = e.clientX; ly = e.clientY;
   player.yaw -= dx * 0.005;
   player.pitch -= dy * 0.005;
-  player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch));
+  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
 });
 
 // MAIN GAME LOOP
@@ -343,39 +451,48 @@ function animate() {
     if (player.y <= 0) { player.y = 0; player.velY = 0; player.onGround = true; }
 
     camera.position.set(player.x, player.y + 1.5, player.z);
-    enterCarBtn.style.display = (camera.position.distanceTo(carGroup.position) < 4.5) ? 'block' : 'none';
+
+    // PICKUP ENGINE FROM GROUND
+    worldEngineItems.forEach((box) => {
+      if (box.visible && camera.position.distanceTo(box.position) < 2.0) {
+        box.visible = false;
+        player.inventoryEngine = box.userData.level;
+        document.getElementById('engineSlot').textContent = `⚙️L${box.userData.level}`;
+      }
+    });
+
+    const distToCar = camera.position.distanceTo(carGroup.position);
+    enterCarBtn.style.display = distToCar < 4.5 ? 'block' : 'none';
+    hoodBtn.style.display = distToCar < 3.5 ? 'block' : 'none';
+    upgradeEngineBtn.style.display = (distToCar < 3.5 && player.inventoryEngine) ? 'block' : 'none';
 
     updateChunks(player.x, player.z);
   } else {
-    // CORRECTED CAR PHYSICS & DIRECTION
-    const maxSpeedByLevel = 70 + (engineLevel * 45);
+    // BMW CAR DRIVING
+    const maxSpeedByLevel = 90 + (currentEngineLevel * 55);
 
-    // Gas moves Forward (-Z direction), Brake moves Reverse (+Z direction)
-    if (carState.gas) carState.speed = Math.min(carState.speed + 22 * dt, maxSpeedByLevel / 3.6);
-    else if (carState.brake) carState.speed = Math.max(carState.speed - 22 * dt, -12);
-    else carState.speed *= 0.96;
+    if (carState.gas) carState.speed = Math.min(carState.speed + (28 + currentEngineLevel * 6) * dt, maxSpeedByLevel / 3.6);
+    else if (carState.brake) carState.speed = Math.max(carState.speed - 28 * dt, -15);
+    else carState.speed *= 0.965;
 
-    // Steering Left turns vehicle Left (+Y Angle), Right turns Right (-Y Angle)
-    if (carState.left) carState.steerAngle = Math.min(carState.steerAngle + 3 * dt, 0.8);
-    else if (carState.right) carState.steerAngle = Math.max(carState.steerAngle - 3 * dt, -0.8);
+    if (carState.left) carState.steerAngle = Math.min(carState.steerAngle + 3.2 * dt, 0.75);
+    else if (carState.right) carState.steerAngle = Math.max(carState.steerAngle - 3.2 * dt, -0.75);
     else carState.steerAngle *= 0.8;
 
-    carGroup.rotation.y += carState.steerAngle * (carState.speed / 15) * dt;
-    steeringGroup.rotation.z = carState.steerAngle * 2.2;
+    carGroup.rotation.y += carState.steerAngle * (carState.speed / 16) * dt;
+    bmwSteeringGroup.rotation.z = carState.steerAngle * 2.5;
 
-    // Local Forward Vector is (0, 0, -1)
     const carFwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
     carGroup.position.addScaledVector(carFwd, carState.speed * dt);
 
-    // Auto Camera Follow
     player.yaw = carGroup.rotation.y;
 
-    // Driver Position inside cabin
-    const driverSeatPos = new THREE.Vector3(-0.55, 1.4, -0.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
-    camera.position.copy(carGroup.position).add(driverSeatPos);
+    // HIGH QUALITY DRIVER EYE VIEW (OVER HOOD VISUAL)
+    const driverEyePos = new THREE.Vector3(-0.55, 1.3, 0.05).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
+    camera.position.copy(carGroup.position).add(driverEyePos);
 
     document.getElementById('speedVal').textContent = Math.round(Math.abs(carState.speed * 3.6));
-    document.getElementById('engineLvlVal').textContent = `LVL ${engineLevel}`;
+    document.getElementById('engineLvlVal').textContent = `LVL ${currentEngineLevel}`;
 
     updateChunks(carGroup.position.x, carGroup.position.z);
   }
