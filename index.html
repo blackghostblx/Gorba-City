@@ -1,509 +1,260 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="fa">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Gorba City - Realistic BMW Driving</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
-  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:sans-serif;touch-action:none}
-  canvas{display:block;width:100vw;height:100vh}
-
-  #rotateOverlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px}
-  #rotateOverlay h2{margin-bottom:10px;font-size:20px;color:#ff9900}
-  #rotateOverlay p{font-size:14px;color:#ccc;margin-bottom:20px}
-  #startBtn{background:#ff9900;border:none;color:#fff;padding:12px 25px;border-radius:20px;font-weight:bold;font-size:16px;cursor:pointer}
-
-  #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;color:rgba(255,255,255,0.7);font-size:18px;pointer-events:none}
-  #lookArea{position:fixed;top:0;right:0;width:50%;height:100%;z-index:10;touch-action:none}
-
-  /* WALK D-PAD */
-  #dpad{position:fixed;bottom:20px;left:20px;width:110px;height:110px;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px}
-  .dbtn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;touch-action:none}
-  .dbtn:active{background:rgba(255,255,255,0.4)}
-  #btnUp{grid-column:2;grid-row:1}
-  #btnLeft{grid-column:1;grid-row:2}
-  #btnJump{grid-column:2;grid-row:2;background:rgba(255,255,255,0.25);border-radius:50%}
-  #btnRight{grid-column:3;grid-row:2}
-  #btnDown{grid-column:2;grid-row:3}
-
-  /* CAR INTERACTION BUTTONS */
-  #actionBtns{position:fixed;bottom:140px;left:25px;z-index:25;display:flex;flex-direction:column;gap:10px}
-  .actBtn{background:rgba(255,165,0,0.85);border:none;color:#fff;padding:10px 16px;border-radius:20px;font-weight:bold;font-size:13px;display:none;box-shadow:0 0 10px rgba(0,0,0,0.5)}
-
-  #carSteering{position:fixed;bottom:25px;left:25px;z-index:25;display:none;gap:15px}
-  .steerBtn{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-
-  #carPedals{position:fixed;bottom:20px;right:25px;z-index:25;display:none;flex-direction:column;gap:10px}
-  .pedal{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-
-  #speedometerUI{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,0.85);color:#00ffcc;padding:8px 20px;border-radius:20px;font-family:monospace;font-size:16px;border:1px solid #00ffcc;display:none}
-
-  /* HOTBAR */
-  #hudContainer{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
-  #hotbar{display:flex;background:rgba(0,0,0,0.7);border:2px solid #444;padding:2px;gap:2px;border-radius:6px;pointer-events:auto}
-  .slot{width:38px;height:38px;background:rgba(255,255,255,0.08);border:1px solid #555;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;position:relative;cursor:pointer}
-  .slot.active{border-color:#ff9900;background:rgba(255,255,255,0.2)}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سفر بی‌انتها در غروب</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        h1 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+    <!-- Three.js and Loaders -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
 </head>
 <body>
 
-<div id="rotateOverlay">
-  <h2>🔄 لطفا صفحه گوشی را افقی کنید</h2>
-  <p>برای بهترین تجربه رانندگی با BMW، گوشی را افقی بگیرید.</p>
-  <button id="startBtn">شروع بازی 🎮</button>
-</div>
-
-<div id="crosshair">+</div>
-<div id="lookArea"></div>
-<div id="speedometerUI"><span id="speedVal">0</span> KM/H | ENGINE: <span id="engineLvlVal">LVL 1</span></div>
-
-<!-- WALK D-PAD -->
-<div id="dpad">
-  <div class="dbtn" id="btnUp">▲</div>
-  <div class="dbtn" id="btnLeft">◄</div>
-  <div class="dbtn" id="btnJump">●</div>
-  <div class="dbtn" id="btnRight">►</div>
-  <div class="dbtn" id="btnDown">▼</div>
-</div>
-
-<!-- ACTIONS -->
-<div id="actionBtns">
-  <button class="actBtn" id="enterCarBtn">🏎️ سوار شدن در BMW</button>
-  <button class="actBtn" id="hoodBtn">🔧 باز/بستن کاپوت</button>
-  <button class="actBtn" id="upgradeEngineBtn">⚡ تعویض موتور</button>
-</div>
-
-<!-- CAR CONTROLS -->
-<div id="carSteering">
-  <div class="steerBtn" id="steerLeft">◄</div>
-  <div class="steerBtn" id="steerRight">►</div>
-</div>
-<div id="carPedals">
-  <div class="pedal" id="gasBtn">⬆️</div>
-  <div class="pedal" id="brakeBtn">⬇️</div>
-</div>
-
-<!-- HOTBAR -->
-<div id="hudContainer">
-  <div id="hotbar">
-    <div class="slot active" data-idx="0">🪓</div>
-    <div class="slot" data-idx="1" id="engineSlot"></div>
-    <div class="slot" data-idx="2"></div>
-    <div class="slot" data-idx="3"></div>
-  </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.getElementById('rotateOverlay').style.display = 'none';
-});
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x6ca6cd);
-scene.fog = new THREE.FogExp2(0x6ca6cd, 0.003);
-
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.rotation.order = 'YXZ';
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild(renderer.domElement);
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// LIGHTING & ENVIRONMENT
-const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xfffae6, 1.3);
-sun.position.set(150, 200, 100);
-sun.castShadow = true;
-scene.add(sun);
-
-// SCENERY: CLOUDS & TREES
-function createCloud() {
-  const cloudGroup = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-  for(let i=0; i<5; i++){
-    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(8 + Math.random()*6), mat);
-    m.position.set(i*6, Math.random()*3, Math.random()*4);
-    cloudGroup.add(m);
-  }
-  return cloudGroup;
-}
-for(let i=0; i<20; i++){
-  const c = createCloud();
-  c.position.set((Math.random()-0.5)*800, 80 + Math.random()*40, (Math.random()-0.5)*800);
-  scene.add(c);
-}
-
-// MINECRAFT GRASS TEXTURE GENERATOR
-function createMinecraftGrassTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 16; canvas.height = 16;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#4a8528'; ctx.fillRect(0, 0, 16, 16);
-  for (let x = 0; x < 16; x++) {
-    for (let y = 0; y < 16; y++) {
-      if (Math.random() > 0.6) {
-        ctx.fillStyle = Math.random() > 0.5 ? '#3c6e1f' : '#5ba032';
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.magFilter = THREE.NearestFilter;
-  return texture;
-}
-const mcGrassTex = createMinecraftGrassTexture();
-
-// INFINITE ROAD & TERRAIN SYSTEM
-const chunks = new Map();
-const chunkSize = 140;
-const worldEngineItems = [];
-
-const grassMat = new THREE.MeshLambertMaterial({ map: mcGrassTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
-const grassPlane1 = new THREE.PlaneGeometry(1, 1);
-const grassPlane2 = new THREE.PlaneGeometry(1, 1);
-grassPlane2.rotateY(Math.PI / 2);
-
-// TREE CREATION
-function createTree() {
-  const tree = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0x4a2e18 }));
-  trunk.position.y = 2;
-  const foliage = new THREE.Mesh(new THREE.ConeGeometry(2.5, 6, 8), new THREE.MeshLambertMaterial({ color: 0x2e5c1e }));
-  foliage.position.y = 5;
-  tree.add(trunk, foliage);
-  return tree;
-}
-
-function createChunk(cx, cz) {
-  const group = new THREE.Group();
-  
-  const gGeo = new THREE.PlaneGeometry(chunkSize, chunkSize);
-  const gMat = new THREE.MeshStandardMaterial({ color: 0x3b6628, roughness: 0.9 });
-  const ground = new THREE.Mesh(gGeo, gMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(cx * chunkSize, 0, cz * chunkSize);
-  group.add(ground);
-
-  // Smooth Curved Road
-  const roadPoints = [];
-  for (let z = -chunkSize/2; z <= chunkSize/2; z += 20) {
-    const worldZ = cz * chunkSize + z;
-    const worldX = cx * chunkSize + Math.sin(worldZ * 0.015) * 25;
-    roadPoints.push(new THREE.Vector3(worldX, 0.03, worldZ));
-  }
-  const curve = new THREE.CatmullRomCurve3(roadPoints);
-  const roadGeo = new THREE.TubeGeometry(curve, 20, 5.0, 8, false);
-  const road = new THREE.Mesh(roadGeo, new THREE.MeshStandardMaterial({ color: 0x222225, roughness: 0.6 }));
-  road.scale.set(1, 0.01, 1);
-  group.add(road);
-
-  // Dense Grass & Side Trees
-  for (let i = 0; i < 90; i++) {
-    const grass = new THREE.Mesh(grassPlane1, grassMat);
-    const rx = (Math.random() - 0.5) * chunkSize + cx * chunkSize;
-    const rz = (Math.random() - 0.5) * chunkSize + cz * chunkSize;
-    grass.position.set(rx, 0.5, rz);
-    group.add(grass);
-
-    if(i < 12){
-      const tree = createTree();
-      tree.position.set(rx + (Math.random()>0.5?12:-12), 0, rz);
-      group.add(tree);
-    }
-  }
-
-  // Engine pickups on side road
-  if (Math.random() > 0.4) {
-    const engLvl = Math.floor(Math.random() * 3) + 2;
-    const engBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.8), new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.8 }));
-    const engX = cx * chunkSize + (Math.random() > 0.5 ? 7 : -7);
-    const engZ = cz * chunkSize;
-    engBox.position.set(engX, 0.4, engZ);
-    engBox.userData = { isEngineItem: true, level: engLvl };
-    group.add(engBox);
-    worldEngineItems.push(engBox);
-  }
-
-  scene.add(group);
-  return group;
-}
-
-function updateChunks(playerX, playerZ) {
-  const currentCX = Math.floor((playerX + chunkSize / 2) / chunkSize);
-  const currentCZ = Math.floor((playerZ + chunkSize / 2) / chunkSize);
-
-  for (let x = -2; x <= 2; x++) {
-    for (let z = -2; z <= 2; z++) {
-      const key = `${currentCX + x},${currentCZ + z}`;
-      if (!chunks.has(key)) {
-        chunks.set(key, createChunk(currentCX + x, currentCZ + z));
-      }
-    }
-  }
-}
-
-// HAND & CAMERA SETUP
-const handGroup = new THREE.Group();
-const armMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.45, 10), new THREE.MeshStandardMaterial({ color: 0xd2b48c }));
-armMesh.rotation.x = Math.PI / 3; armMesh.position.set(0, -0.1, 0.1);
-handGroup.add(armMesh);
-handGroup.position.set(0.25, -0.22, -0.35);
-camera.add(handGroup);
-scene.add(camera);
-
-// REALISTIC BMW STYLE CAR
-const carGroup = new THREE.Group();
-const bmwPaint = new THREE.MeshStandardMaterial({ color: 0x800020, metalness: 0.8, roughness: 0.2 }); // Deep Metallic Red
-const chromeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.1 });
-const darkInterior = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.8 });
-
-// CURVED BMW BODY (Extruded Cylinder Body shape)
-const bodyGeo = new THREE.CylinderGeometry(1.25, 1.3, 4.6, 16);
-bodyGeo.rotateX(Math.PI / 2);
-bodyGeo.scale(1, 0.45, 1);
-const carBody = new THREE.Mesh(bodyGeo, bmwPaint);
-carBody.position.y = 0.65;
-carGroup.add(carBody);
-
-// BMW Iconic Kidney Grille
-const kidneyL = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 8, 16), chromeMat);
-kidneyL.position.set(-0.22, 0.65, -2.32); kidneyL.scale.set(0.8, 1.4, 1);
-const kidneyR = kidneyL.clone(); kidneyR.position.x = 0.22;
-carGroup.add(kidneyL, kidneyR);
-
-// Headlights (Angle Eyes)
-const lightGeo = new THREE.SphereGeometry(0.12, 12, 12);
-const lightMat = new THREE.MeshBasicMaterial({ color: 0x99ffff });
-const headL = new THREE.Mesh(lightGeo, lightMat); headL.position.set(-0.85, 0.68, -2.25);
-const headR = headL.clone(); headR.position.x = 0.85;
-carGroup.add(headL, headR);
-
-// HOOD & ENGINE BAY
-const hoodGroup = new THREE.Group();
-const hoodMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.6), bmwPaint);
-hoodMesh.position.set(0, 0, -0.8);
-hoodGroup.add(hoodMesh);
-hoodGroup.position.set(0, 0.9, -0.7);
-carGroup.add(hoodGroup);
-
-let currentEngineLevel = 1;
-const engineMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.9), chromeMat);
-engineMesh.position.set(0, 0.65, -1.5);
-carGroup.add(engineMesh);
-
-// REALISTIC CABIN & DASHBOARD
-const cabinGeo = new THREE.CylinderGeometry(1.05, 1.2, 2.2, 12);
-cabinGeo.rotateX(Math.PI / 2);
-cabinGeo.scale(0.95, 0.55, 1);
-const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x111111, transparent: true, opacity: 0.45, roughness: 0.1 });
-const cabinGlass = new THREE.Mesh(cabinGeo, glassMat);
-cabinGlass.position.set(0, 1.25, 0.2);
-carGroup.add(cabinGlass);
-
-// Curved Dashboard & Center Console
-const dashBoard = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 2.0, 12), darkInterior);
-dashBoard.rotation.z = Math.PI / 2;
-dashBoard.position.set(0, 0.95, -0.75);
-carGroup.add(dashBoard);
-
-// Sports BMW Steering Wheel
-const bmwSteeringGroup = new THREE.Group();
-const stRing = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.025, 10, 24), darkInterior);
-const stCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.04, 12), chromeMat);
-stCenter.rotation.x = Math.PI / 2;
-bmwSteeringGroup.add(stRing, stCenter);
-bmwSteeringGroup.position.set(-0.55, 1.05, -0.55);
-bmwSteeringGroup.rotation.x = 0.35;
-carGroup.add(bmwSteeringGroup);
-
-// Leather Seats
-const seatGeo = new THREE.BoxGeometry(0.65, 0.75, 0.65);
-const driverSeat = new THREE.Mesh(seatGeo, darkInterior);
-driverSeat.position.set(-0.55, 0.65, 0.2);
-const passSeat = driverSeat.clone(); passSeat.position.x = 0.55;
-carGroup.add(driverSeat, passSeat);
-
-// Detailed Alloy Wheels
-const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.32, 24);
-const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.5 });
-[[-1.2,0.42,1.4], [1.2,0.42,1.4], [-1.2,0.42,-1.4], [1.2,0.42,-1.4]].forEach(p => {
-  const w = new THREE.Mesh(wheelGeo, wheelMat);
-  w.rotation.z = Math.PI / 2;
-  w.position.set(...p);
-  carGroup.add(w);
-});
-
-carGroup.position.set(0, 0, 10);
-scene.add(carGroup);
-
-// CONTROLS & STATE
-const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false, inventoryEngine: null };
-const carState = { speed: 0, steerAngle: 0, hoodOpen: false, gas: false, brake: false, left: false, right: false };
-const moveState = { fwd: false, bwd: false, lft: false, rgt: false };
-
-const bindBtn = (id, key) => {
-  const el = document.getElementById(id);
-  el.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; });
-  el.addEventListener('pointerup', (e) => { e.preventDefault(); moveState[key] = false; });
-};
-bindBtn('btnUp', 'fwd'); bindBtn('btnDown', 'bwd'); bindBtn('btnLeft', 'lft'); bindBtn('btnRight', 'rgt');
-
-document.getElementById('btnJump').addEventListener('pointerdown', () => {
-  if (player.onGround && !player.inCar) { player.velY = 6.5; player.onGround = false; }
-});
-
-const carPedalBind = (id, action) => {
-  const el = document.getElementById(id);
-  el.addEventListener('pointerdown', (e) => { e.preventDefault(); carState[action] = true; });
-  el.addEventListener('pointerup', (e) => { e.preventDefault(); carState[action] = false; });
-};
-carPedalBind('gasBtn', 'gas'); carPedalBind('brakeBtn', 'brake');
-carPedalBind('steerLeft', 'left'); carPedalBind('steerRight', 'right');
-
-// HOOD TOGGLE
-const hoodBtn = document.getElementById('hoodBtn');
-hoodBtn.addEventListener('click', () => {
-  carState.hoodOpen = !carState.hoodOpen;
-  hoodGroup.rotation.x = carState.hoodOpen ? -0.85 : 0;
-});
-
-// ENGINE UPGRADE
-const upgradeEngineBtn = document.getElementById('upgradeEngineBtn');
-upgradeEngineBtn.addEventListener('click', () => {
-  if (player.inventoryEngine) {
-    currentEngineLevel = player.inventoryEngine;
-    player.inventoryEngine = null;
-    document.getElementById('engineSlot').textContent = '';
-    alert(`موتور BMW با موفقیت به لول ${currentEngineLevel} ارتقا یافت! 🚀🏎️`);
-  }
-});
-
-// ENTER / EXIT CAR
-const enterCarBtn = document.getElementById('enterCarBtn');
-enterCarBtn.addEventListener('click', () => {
-  player.inCar = !player.inCar;
-  if(player.inCar){
-    enterCarBtn.textContent = '🚪 پیاده شدن';
-    hoodBtn.style.display = 'none';
-    upgradeEngineBtn.style.display = 'none';
-    document.getElementById('dpad').style.display = 'none';
-    document.getElementById('carPedals').style.display = 'flex';
-    document.getElementById('carSteering').style.display = 'flex';
-    document.getElementById('speedometerUI').style.display = 'block';
-    handGroup.visible = false;
-  } else {
-    enterCarBtn.textContent = '🏎️ سوار شدن در BMW';
-    document.getElementById('dpad').style.display = 'grid';
-    document.getElementById('carPedals').style.display = 'none';
-    document.getElementById('carSteering').style.display = 'none';
-    document.getElementById('speedometerUI').style.display = 'none';
-    handGroup.visible = true;
-    player.x = carGroup.position.x - 2.5;
-    player.z = carGroup.position.z;
-  }
-});
-
-// TOUCH LOOK
-const lookArea = document.getElementById('lookArea');
-let looking = false, lx = 0, ly = 0;
-lookArea.addEventListener('pointerdown', e => { looking = true; lx = e.clientX; ly = e.clientY; });
-lookArea.addEventListener('pointerup', () => looking = false);
-lookArea.addEventListener('pointermove', e => {
-  if (!looking) return;
-  const dx = e.clientX - lx, dy = e.clientY - ly;
-  lx = e.clientX; ly = e.clientY;
-  player.yaw -= dx * 0.005;
-  player.pitch -= dy * 0.005;
-  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
-});
-
-// MAIN GAME LOOP
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(0.05, clock.getDelta());
-
-  if (!player.inCar) {
-    const speed = 5;
-    let moveZ = (moveState.fwd ? 1 : 0) - (moveState.bwd ? 1 : 0);
-    let moveX = (moveState.rgt ? 1 : 0) - (moveState.lft ? 1 : 0);
-
-    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
-    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
-
-    player.x += (forward.x * moveZ + right.x * moveX) * speed * dt;
-    player.z += (forward.z * moveZ + right.z * moveX) * speed * dt;
-
-    player.velY -= 18 * dt;
-    player.y += player.velY * dt;
-    if (player.y <= 0) { player.y = 0; player.velY = 0; player.onGround = true; }
-
-    camera.position.set(player.x, player.y + 1.5, player.z);
-
-    // PICKUP ENGINE FROM GROUND
-    worldEngineItems.forEach((box) => {
-      if (box.visible && camera.position.distanceTo(box.position) < 2.0) {
-        box.visible = false;
-        player.inventoryEngine = box.userData.level;
-        document.getElementById('engineSlot').textContent = `⚙️L${box.userData.level}`;
-      }
-    });
-
-    const distToCar = camera.position.distanceTo(carGroup.position);
-    enterCarBtn.style.display = distToCar < 4.5 ? 'block' : 'none';
-    hoodBtn.style.display = distToCar < 3.5 ? 'block' : 'none';
-    upgradeEngineBtn.style.display = (distToCar < 3.5 && player.inventoryEngine) ? 'block' : 'none';
-
-    updateChunks(player.x, player.z);
-  } else {
-    // BMW CAR DRIVING
-    const maxSpeedByLevel = 90 + (currentEngineLevel * 55);
-
-    if (carState.gas) carState.speed = Math.min(carState.speed + (28 + currentEngineLevel * 6) * dt, maxSpeedByLevel / 3.6);
-    else if (carState.brake) carState.speed = Math.max(carState.speed - 28 * dt, -15);
-    else carState.speed *= 0.965;
-
-    if (carState.left) carState.steerAngle = Math.min(carState.steerAngle + 3.2 * dt, 0.75);
-    else if (carState.right) carState.steerAngle = Math.max(carState.steerAngle - 3.2 * dt, -0.75);
-    else carState.steerAngle *= 0.8;
-
-    carGroup.rotation.y += carState.steerAngle * (carState.speed / 16) * dt;
-    bmwSteeringGroup.rotation.z = carState.steerAngle * 2.5;
-
-    const carFwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
-    carGroup.position.addScaledVector(carFwd, carState.speed * dt);
-
-    player.yaw = carGroup.rotation.y;
-
-    // HIGH QUALITY DRIVER EYE VIEW (OVER HOOD VISUAL)
-    const driverEyePos = new THREE.Vector3(-0.55, 1.3, 0.05).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
-    camera.position.copy(carGroup.position).add(driverEyePos);
-
-    document.getElementById('speedVal').textContent = Math.round(Math.abs(carState.speed * 3.6));
-    document.getElementById('engineLvlVal').textContent = `LVL ${currentEngineLevel}`;
-
-    updateChunks(carGroup.position.x, carGroup.position.z);
-  }
-
-  camera.rotation.y = player.yaw;
-  camera.rotation.x = player.pitch;
-
-  renderer.render(scene, camera);
-}
-
-animate();
-</script>
+    <div id="ui">
+        <h1>INFINITE SUNSET DRIVE</h1>
+        <p>برای حرکت کلیک کنید و کلیدهای W A S D یا فلش‌ها را فشار دهید</p>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- تنظیمات اصلی صحنه ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // مه سینمایی غروب
+        const fogColor = new THREE.Color(0xff5533);
+        scene.background = new THREE.Color(0x2c1635);
+        scene.fog = new THREE.FogExp2(0xef5d3b, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- نورپردازی غروب (Sunset Lighting) ---
+        const ambientLight = new THREE.AmbientLight(0x382843, 1.2);
+        scene.add(ambientLight);
+
+        // نور اصلی خورشید غروب
+        const sunLight = new THREE.DirectionalLight(0xff7700, 2.5);
+        sunLight.position.set(0, 20, -300);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        scene.add(sunLight);
+
+        // خورشید رویایی (یک کره درخشان در افق)
+        const sunGeo = new THREE.SphereGeometry(40, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(0, 15, -400);
+        scene.add(sun);
+
+        // --- ماشین (Player Car) ---
+        const carGroup = new THREE.Group();
+        scene.add(carGroup);
+
+        // ایجاد یک ماشین هنری پیش‌فرض (در صورت عدم بارگذاری فایل FBX)
+        function createDefaultCar() {
+            const bodyGeo = new THREE.BoxGeometry(2, 0.8, 4);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            body.castShadow = true;
+            carGroup.add(body);
+
+            const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 2);
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0xff3366, roughness: 0.1, metalness: 0.9 });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 1.2, -0.2);
+            carGroup.add(cabin);
+
+            // چراغ‌های پشت ماشین
+            const tailLightGeo = new THREE.BoxGeometry(0.4, 0.1, 0.1);
+            const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
+            const tailLeft = new THREE.Mesh(tailLightGeo, tailLightMat);
+            tailLeft.position.set(-0.7, 0.7, 2.01);
+            const tailRight = tailLeft.clone();
+            tailRight.position.x = 0.7;
+            carGroup.add(tailLeft, tailRight);
+        }
+
+        // بارگذاری فایل FBX (اگر فایل car.fbx در کنار این HTML باشد اجرا می‌شود)
+        const fbxLoader = new THREE.FBXLoader();
+        fbxLoader.load('_car.001_opada.fbx', (fbx) => {
+            fbx.scale.set(0.01, 0.01, 0.01); // تنظیم مقیاس مدل
+            fbx.traverse((child) => {
+                if (child.isMesh) child.castShadow = true;
+            });
+            carGroup.add(fbx);
+        }, undefined, () => {
+            // در صورت نبودن فایل، ماشین پیش‌فرض هنری ساخته می‌شود
+            createDefaultCar();
+        });
+
+        // --- تولید جاده و محیط بی‌انتها ---
+        const ROAD_WIDTH = 12;
+        const CHUNK_SIZE = 100;
+        const VISIBLE_CHUNKS = 8;
+        const chunks = [];
+
+        // متریال‌ها
+        const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.8 });
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const mountainMat = new THREE.MeshStandardMaterial({ color: 0x2a1835, roughness: 0.9, flatShading: true });
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x142018, flatShading: true });
+
+        function createChunk(zPosition) {
+            const chunk = new THREE.Group();
+            chunk.position.z = zPosition;
+
+            // جاده
+            const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, CHUNK_SIZE);
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.receiveShadow = true;
+            chunk.add(road);
+
+            // خطوط وسط جاده
+            for (let i = -CHUNK_SIZE / 2; i < CHUNK_SIZE / 2; i += 10) {
+                const lineGeo = new THREE.PlaneGeometry(0.3, 4);
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(0, 0.02, i);
+                chunk.add(line);
+            }
+
+            // کوه‌ها و مناظر دو طرف جاده (Stylized Art)
+            for (let side of [-1, 1]) {
+                // کوه‌ها
+                const mountainGeo = new THREE.ConeGeometry(20 + Math.random() * 15, 40 + Math.random() * 30, 4);
+                const mountain = new THREE.Mesh(mountainGeo, mountainMat);
+                mountain.position.set(side * (30 + Math.random() * 20), 15, (Math.random() - 0.5) * CHUNK_SIZE);
+                chunk.add(mountain);
+
+                // درخت‌ها
+                for (let t = 0; t < 5; t++) {
+                    const treeGeo = new THREE.ConeGeometry(2 + Math.random() * 2, 8 + Math.random() * 4, 5);
+                    const tree = new THREE.Mesh(treeGeo, treeMat);
+                    tree.position.set(side * (10 + Math.random() * 15), 4, (Math.random() - 0.5) * CHUNK_SIZE);
+                    chunk.add(tree);
+                }
+            }
+
+            scene.add(chunk);
+            return chunk;
+        }
+
+        // مقداردهی اولیه چانک‌ها
+        for (let i = 0; i < VISIBLE_CHUNKS; i++) {
+            chunks.push(createChunk(-i * CHUNK_SIZE));
+        }
+
+        // --- کنترل‌ها و حرکت ---
+        const keys = { Forward: false, Backward: false, Left: false, Right: false };
+        let speed = 0;
+        const maxSpeed = 1.2;
+        const accel = 0.02;
+        const friction = 0.98;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'w' || e.key === 'ArrowUp') keys.Forward = true;
+            if (e.key === 's' || e.key === 'ArrowDown') keys.Backward = true;
+            if (e.key === 'a' || e.key === 'ArrowLeft') keys.Left = true;
+            if (e.key === 'd' || e.key === 'ArrowRight') keys.Right = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'w' || e.key === 'ArrowUp') keys.Forward = false;
+            if (e.key === 's' || e.key === 'ArrowDown') keys.Backward = false;
+            if (e.key === 'a' || e.key === 'ArrowLeft') keys.Left = false;
+            if (e.key === 'd' || e.key === 'ArrowRight') keys.Right = false;
+        });
+
+        // --- حلقه انیمیشن و رندر ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // مدیریت سرعت
+            if (keys.Forward) speed = Math.min(speed + accel, maxSpeed);
+            else if (keys.Backward) speed = Math.max(speed - accel, -maxSpeed / 2);
+            else speed *= friction;
+
+            // حرکت ماشین به جلو
+            carGroup.position.z -= speed;
+
+            // فرمان‌پذیری چپ و راست
+            if (Math.abs(speed) > 0.05) {
+                if (keys.Left && carGroup.position.x > -ROAD_WIDTH / 2 + 1.5) carGroup.position.x -= 0.1;
+                if (keys.Right && carGroup.position.x < ROAD_WIDTH / 2 - 1.5) carGroup.position.x += 0.1;
+            }
+
+            // تعقیب دوربین پشت ماشین (Third-Person View)
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, carGroup.position.x, 0.05);
+            camera.position.y = carGroup.position.y + 3.5;
+            camera.position.z = carGroup.position.z + 8;
+            camera.lookAt(carGroup.position.x, carGroup.position.y + 1, carGroup.position.z - 10);
+
+            // انتقال خورشید همراه ماشین برای بی‌انتها ماندن غروب
+            sun.position.z = carGroup.position.z - 400;
+            sunLight.position.z = carGroup.position.z - 300;
+
+            // مدیریت بی‌انتهایی جاده (Endless Road Generation)
+            chunks.forEach((chunk) => {
+                if (chunk.position.z > carGroup.position.z + CHUNK_SIZE) {
+                    chunk.position.z -= VISIBLE_CHUNKS * CHUNK_SIZE;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // تنظیم اندازه صفحه هنگام Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
