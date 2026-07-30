@@ -5,7 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Gorba City - Open World</title>
 <meta name="theme-color" content="#0a0a1a">
+
+<!-- ===== FORCE LANDSCAPE ===== -->
 <style>
+  /* Force landscape on mobile */
+  @media screen and (orientation: portrait) {
+    html, body {
+      transform: rotate(90deg);
+      transform-origin: center center;
+      width: 100vh;
+      height: 100vw;
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  }
+
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     width:100%; height:100%; overflow:hidden;
@@ -13,6 +29,7 @@
     font-family: 'Segoe UI', Tahoma, sans-serif;
     touch-action:none;
     position:fixed;
+    top:0; left:0;
   }
 
   /* ===== LOADING ===== */
@@ -26,7 +43,7 @@
   }
   #loader.hidden { opacity:0; pointer-events:none; }
   #loader h1 {
-    font-size:clamp(32px, 8vw, 60px);
+    font-size:clamp(28px, 5vw, 52px);
     font-weight:900;
     background: linear-gradient(135deg, #ff6b35, #f7931e);
     -webkit-background-clip:text;
@@ -34,14 +51,14 @@
     margin-bottom:4px;
   }
   #loader .sub {
-    font-size:clamp(10px, 2vw, 16px);
+    font-size:clamp(10px, 1.5vw, 16px);
     color:#6666aa;
     letter-spacing:6px;
     text-transform:uppercase;
     margin-bottom:30px;
   }
   .loader-bar-wrap {
-    width:min(280px, 65%);
+    width:min(300px, 50%);
     height:4px;
     background:rgba(255,255,255,0.06);
     border-radius:10px;
@@ -51,7 +68,7 @@
     width:0%; height:100%;
     background: linear-gradient(90deg, #ff6b35, #f7931e);
     border-radius:10px;
-    transition: width 0.3s ease;
+    transition: width 0.2s ease;
   }
   #loaderPercent {
     margin-top:12px;
@@ -72,7 +89,7 @@
   /* ===== HUD ===== */
   #hud {
     position:fixed; top:0; left:0; right:0;
-    padding:10px 14px;
+    padding:8px 14px;
     z-index:20;
     display:none;
     justify-content:space-between;
@@ -80,18 +97,18 @@
     pointer-events:none;
     background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
   }
-  .hud-left { display:flex; flex-direction:column; gap:3px; }
+  .hud-left { display:flex; flex-direction:column; gap:2px; }
   .hud-item {
     display:flex; align-items:center;
-    gap:8px; color:#fff;
-    font-size:clamp(10px, 1.4vw, 13px);
+    gap:6px; color:#fff;
+    font-size:clamp(9px, 1.2vw, 12px);
     text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     font-weight:600;
   }
-  .hud-item .icon { font-size:14px; }
+  .hud-item .icon { font-size:12px; }
   .bar-wrap {
-    width:clamp(60px, 16vw, 120px);
-    height:5px;
+    width:clamp(50px, 12vw, 100px);
+    height:4px;
     background:rgba(0,0,0,0.6);
     border-radius:10px;
     overflow:hidden;
@@ -105,13 +122,13 @@
   .hud-right {
     text-align:right;
     color:#fff;
-    font-size:clamp(9px, 1.2vw, 12px);
+    font-size:clamp(8px, 1vw, 11px);
     text-shadow: 0 2px 8px rgba(0,0,0,0.9);
     opacity:0.7;
     font-weight:300;
     letter-spacing:0.5px;
   }
-  .hud-right .time { font-size:clamp(14px, 2.2vw, 22px); font-weight:700; color:#fff; opacity:1; }
+  .hud-right .time { font-size:clamp(12px, 1.8vw, 18px); font-weight:700; color:#fff; opacity:1; }
 
   /* ===== CROSSHAIR ===== */
   #crosshair {
@@ -124,8 +141,8 @@
     content:''; position:absolute;
     background:rgba(255,255,255,0.5);
   }
-  #crosshair::before { width:1px; height:16px; top:50%; left:50%; transform:translate(-50%,-50%); }
-  #crosshair::after { width:16px; height:1px; top:50%; left:50%; transform:translate(-50%,-50%); }
+  #crosshair::before { width:1px; height:14px; top:50%; left:50%; transform:translate(-50%,-50%); }
+  #crosshair::after { width:14px; height:1px; top:50%; left:50%; transform:translate(-50%,-50%); }
   #crosshair .dot {
     position:absolute; top:50%; left:50%;
     width:3px; height:3px;
@@ -143,9 +160,9 @@
   }
 
   #joystickArea {
-    position:fixed; bottom:clamp(16px, 4vh, 40px); left:clamp(14px, 3vw, 30px);
-    width:clamp(90px, 18vw, 130px);
-    height:clamp(90px, 18vw, 130px);
+    position:fixed; bottom:clamp(14px, 3vh, 30px); left:clamp(12px, 2vw, 25px);
+    width:clamp(80px, 14vw, 110px);
+    height:clamp(80px, 14vw, 110px);
     border-radius:50%;
     background:rgba(255,255,255,0.04);
     border:1.5px solid rgba(255,255,255,0.1);
@@ -156,8 +173,8 @@
   }
   #joyKnob {
     position:absolute;
-    width:clamp(38px, 7vw, 52px);
-    height:clamp(38px, 7vw, 52px);
+    width:clamp(32px, 5.5vw, 44px);
+    height:clamp(32px, 5.5vw, 44px);
     border-radius:50%;
     background:radial-gradient(circle, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
     top:50%; left:50%;
@@ -169,19 +186,19 @@
   }
 
   #actionBtns {
-    position:fixed; bottom:clamp(20px, 5vh, 50px); right:clamp(12px, 3vw, 30px);
+    position:fixed; bottom:clamp(14px, 3vh, 30px); right:clamp(10px, 2vw, 25px);
     z-index:10;
     display:flex; flex-direction:column;
-    gap:10px;
+    gap:8px;
     align-items:center;
   }
   .action-btn {
-    width:clamp(54px, 10vw, 70px);
-    height:clamp(54px, 10vw, 70px);
+    width:clamp(46px, 8vw, 58px);
+    height:clamp(46px, 8vw, 58px);
     border-radius:50%;
     border:1.5px solid rgba(255,255,255,0.12);
     color:#fff;
-    font-size:clamp(10px, 1.6vw, 14px);
+    font-size:clamp(9px, 1.3vw, 12px);
     font-weight:700;
     display:flex;
     align-items:center;
@@ -195,20 +212,20 @@
   .action-btn:active { transform:scale(0.88); }
   #jumpBtn { background:rgba(255,100,50,0.15); border-color:rgba(255,150,80,0.2); }
   #jumpBtn:active { background:rgba(255,100,50,0.3); }
-  #sprintBtn { background:rgba(50,150,255,0.1); border-color:rgba(50,150,255,0.15); font-size:clamp(14px, 2vw, 20px); }
+  #sprintBtn { background:rgba(50,150,255,0.1); border-color:rgba(50,150,255,0.15); font-size:clamp(12px, 1.6vw, 18px); }
   #sprintBtn:active { background:rgba(50,150,255,0.3); }
   #sprintBtn.active { background:rgba(50,150,255,0.3); border-color:rgba(50,150,255,0.5); }
 
   /* ===== INVENTORY BUTTON ===== */
   #invBtn {
-    position:fixed; top:60px; right:12px;
-    width:clamp(42px, 7vw, 52px);
-    height:clamp(42px, 7vw, 52px);
-    border-radius:12px;
+    position:fixed; top:55px; right:10px;
+    width:clamp(36px, 5.5vw, 44px);
+    height:clamp(36px, 5.5vw, 44px);
+    border-radius:10px;
     background:rgba(0,0,0,0.5);
     border:1px solid rgba(255,255,255,0.08);
     color:#fff;
-    font-size:clamp(18px, 3vw, 26px);
+    font-size:clamp(16px, 2.5vw, 22px);
     z-index:15;
     display:flex;
     align-items:center;
@@ -225,7 +242,7 @@
     backdrop-filter:blur(20px);
     display:none;
     flex-direction:column;
-    padding:20px 16px;
+    padding:16px 14px;
     color:#fff;
   }
   #inventory.open { display:flex; }
@@ -233,18 +250,18 @@
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding-bottom:16px;
+    padding-bottom:12px;
     border-bottom:1px solid rgba(255,255,255,0.06);
-    margin-bottom:16px;
+    margin-bottom:12px;
   }
   #invHeader h2 {
-    font-size:clamp(18px, 3.5vw, 28px);
+    font-size:clamp(16px, 2.5vw, 22px);
     font-weight:300;
     letter-spacing:2px;
   }
   #invHeader h2 span { color:#ff6b35; }
   #invClose {
-    font-size:clamp(24px, 4vw, 36px);
+    font-size:clamp(20px, 3vw, 28px);
     background:none;
     border:none;
     color:#fff;
@@ -256,25 +273,25 @@
   #invGrid {
     display:grid;
     grid-template-columns: repeat(4, 1fr);
-    gap:10px;
+    gap:8px;
     flex:1;
     overflow-y:auto;
-    padding-bottom:10px;
+    padding-bottom:8px;
     align-content:start;
   }
   .inv-slot {
     aspect-ratio:1;
     background:rgba(255,255,255,0.04);
     border:1px solid rgba(255,255,255,0.06);
-    border-radius:10px;
+    border-radius:8px;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    font-size:clamp(22px, 4vw, 36px);
+    font-size:clamp(20px, 3vw, 30px);
     color:#888;
     transition: all 0.2s;
-    min-height:60px;
+    min-height:50px;
     position:relative;
   }
   .inv-slot.has-item {
@@ -283,22 +300,22 @@
   }
   .inv-slot .count {
     position:absolute;
-    bottom:4px; right:8px;
-    font-size:clamp(9px, 1.4vw, 13px);
+    bottom:2px; right:6px;
+    font-size:clamp(8px, 1vw, 11px);
     color:#aaa;
     font-weight:700;
   }
   .inv-slot .name {
-    font-size:clamp(7px, 1vw, 10px);
+    font-size:clamp(6px, 0.8vw, 9px);
     color:#666;
     margin-top:2px;
   }
   #invStats {
-    padding:12px 0 0 0;
+    padding:10px 0 0 0;
     border-top:1px solid rgba(255,255,255,0.06);
     display:flex;
     justify-content:space-around;
-    font-size:clamp(11px, 1.6vw, 14px);
+    font-size:clamp(10px, 1.2vw, 13px);
     color:#888;
   }
   #invStats span { color:#fff; font-weight:600; }
@@ -310,9 +327,9 @@
     z-index:7;
     color:#fff;
     background:rgba(0,0,0,0.6);
-    padding:8px 18px;
+    padding:6px 16px;
     border-radius:20px;
-    font-size:clamp(11px, 1.6vw, 14px);
+    font-size:clamp(10px, 1.2vw, 13px);
     backdrop-filter:blur(8px);
     border:1px solid rgba(255,255,255,0.05);
     display:none;
@@ -343,7 +360,6 @@
   <div class="hud-right">
     <div class="time" id="gameTime">12:00</div>
     <div id="locationName">🌆 Gorba City</div>
-    <div id="zoneName">مرکز شهر</div>
   </div>
 </div>
 
@@ -351,7 +367,7 @@
 <div id="crosshair"><div class="dot"></div></div>
 
 <!-- ===== INTERACT HINT ===== -->
-<div id="interactHint">👆 برای برداشتن ضربه بزن</div>
+<div id="interactHint">👆 برداشتن</div>
 
 <!-- ===== CONTROLS ===== -->
 <div id="lookArea"></div>
@@ -380,21 +396,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ============================================
-// 🔥 DISABLE ALL SAVING - FRESH START EVERY TIME
+// CLEAR ALL CACHE - FRESH START
 // ============================================
-// Clear any cached data
 if ('caches' in window) {
   caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
 }
-// Clear localStorage
 try { localStorage.clear(); } catch(e) {}
-// Clear sessionStorage
 try { sessionStorage.clear(); } catch(e) {}
 
-console.log('🔥 Game started fresh - no saved data!');
+console.log('🔥 Gorba City - Fresh Start!');
 
 // ============================================
-// LOADING SYSTEM
+// LOADING
 // ============================================
 let loadProgress = 0;
 const loaderFill = document.getElementById('loaderFill');
@@ -403,13 +416,7 @@ const loaderTips = document.getElementById('loaderTips');
 const loader = document.getElementById('loader');
 const hud = document.getElementById('hud');
 
-const tips = [
-  '🌍 در حال ساخت جهان...',
-  '🏙️ ایجاد ساختمان‌ها...',
-  '🌳 کاشت درختان...',
-  '☀️ تنظیم نور...',
-  '🎒 آماده‌سازی موجودی...'
-];
+const tips = ['🌍 ساخت جهان...', '🏙️ ساختمان‌ها...', '🌳 درختان...', '☀️ نور...', '🎒 موجودی...'];
 
 function updateLoader(val) {
   loadProgress = Math.min(val, 100);
@@ -420,7 +427,7 @@ function updateLoader(val) {
 }
 
 // ============================================
-// INVENTORY SYSTEM
+// INVENTORY
 // ============================================
 const inventory = {
   items: [],
@@ -439,39 +446,23 @@ const inventory = {
     if (this.items[idx].count <= 0) this.items.splice(idx, 1);
     return true;
   },
-  getTotalWeight() {
-    return this.items.reduce((sum, i) => sum + (i.weight * i.count), 0);
-  },
-  getTotalCount() {
-    return this.items.reduce((sum, i) => sum + i.count, 0);
-  }
+  getTotalWeight() { return this.items.reduce((sum, i) => sum + (i.weight * i.count), 0); },
+  getTotalCount() { return this.items.reduce((sum, i) => sum + i.count, 0); }
 };
 
 // ============================================
-// WORLD ITEMS (pickups)
+// THREE.JS SETUP
 // ============================================
-const worldItems = [];
-const itemTypes = [
-  { name: 'سیب', emoji: '🍎', weight: 0.5, color: 0xff3333 },
-  { name: 'نان', emoji: '🍞', weight: 0.4, color: 0xd4a373 },
-  { name: 'آب', emoji: '💧', weight: 0.6, color: 0x4fc3f7 },
-  { name: 'جعبه کمک', emoji: '🩹', weight: 0.8, color: 0xff1744 },
-  { name: 'سکه', emoji: '🪙', weight: 0.1, color: 0xffd700 },
-];
-
-// ============================================
-// SCENE SETUP
-// ============================================
-updateLoader(5);
+updateLoader(10);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x6a9ec4);
-scene.fog = new THREE.FogExp2(0x6a9ec4, 0.0035);
+scene.fog = new THREE.FogExp2(0x6a9ec4, 0.003);
 
-updateLoader(10);
+updateLoader(20);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 300);
 camera.rotation.order = 'YXZ';
 
-updateLoader(15);
+updateLoader(30);
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -481,10 +472,10 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
-updateLoader(20);
 // ============================================
 // LIGHTING
 // ============================================
+updateLoader(40);
 const ambient = new THREE.AmbientLight(0x446688, 0.5);
 scene.add(ambient);
 
@@ -509,11 +500,11 @@ const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
 fillLight.position.set(-40, 30, 50);
 scene.add(fillLight);
 
-updateLoader(30);
 // ============================================
-// BIG TERRAIN (Open World)
+// TERRAIN
 // ============================================
-const GRID = 60;
+updateLoader(50);
+const GRID = 50;
 const heights = [];
 const center = GRID/2;
 
@@ -521,14 +512,12 @@ function smoothHeight(x, z) {
   const dx = x - center, dz = z - center;
   const dist = Math.hypot(dx, dz);
   let h = 0;
-  
   if (dist < 10) h = 0;
   else if (dist < 14) h = (dist - 10) * 0.2;
   else {
-    h = 1.5 + Math.sin(x * 0.045 + z * 0.03) * 2.2;
+    h = 1.5 + Math.sin(x * 0.05 + z * 0.03) * 2;
     h += Math.cos(x * 0.07 - z * 0.05) * 1.5;
-    h += Math.sin(x * 0.12 + z * 0.09) * 0.8;
-    if (dist > 25) h += (dist - 25) * 0.08;
+    if (dist > 25) h += (dist - 25) * 0.06;
     if (dist > 10 && dist < 18) h -= 0.5;
     h = Math.max(0, h);
   }
@@ -548,14 +537,13 @@ function heightAt(gx, gz) {
   return heights[gx][gz];
 }
 
-updateLoader(45);
 // ============================================
 // GROUND
 // ============================================
+updateLoader(60);
 const groundGroup = new THREE.Group();
-const grassColors = [0x5a8c4a, 0x6a9c5a, 0x4a7c3a, 0x7aaa6a, 0x3a6a2a];
+const grassColors = [0x5a8c4a, 0x6a9c5a, 0x4a7c3a, 0x7aaa6a];
 const dirtColor = 0x8a7a5a;
-const sandColor = 0xc4b08a;
 const rockColor = 0x8a8a86;
 
 function getGroundColor(h, x, z) {
@@ -563,13 +551,11 @@ function getGroundColor(h, x, z) {
   const dist = Math.hypot(dx, dz);
   if (dist < 8) return dirtColor;
   if (dist < 10) return 0x9a8a6a;
-  if (dist > 28) return rockColor;
-  if (dist > 22 && dist < 28) return sandColor;
+  if (dist > 27) return rockColor;
   if (h < 0.5) return grassColors[0];
-  if (h < 1.2) return grassColors[1];
-  if (h < 2.5) return grassColors[2];
-  if (h < 4) return grassColors[3];
-  return grassColors[4];
+  if (h < 1.5) return grassColors[1];
+  if (h < 3) return grassColors[2];
+  return grassColors[3];
 }
 
 const geoGround = new THREE.PlaneGeometry(1, 1);
@@ -590,12 +576,12 @@ for (let x = 0; x < GRID; x++) {
 }
 scene.add(groundGroup);
 
-updateLoader(55);
 // ============================================
 // BUILDINGS
 // ============================================
-const buildingColors = [0xccbb99, 0xbbaa88, 0xddccaa, 0xaa9977, 0xccaa88, 0xddbb99];
-const roofColors = [0x664433, 0x554433, 0x665544, 0x443322, 0x554433, 0x664433];
+updateLoader(70);
+const buildingColors = [0xccbb99, 0xbbaa88, 0xddccaa, 0xaa9977, 0xccaa88];
+const roofColors = [0x664433, 0x554433, 0x665544, 0x443322];
 
 function makeBuilding(x, z, w, h, d, color, roofColor) {
   const g = new THREE.Group();
@@ -615,16 +601,14 @@ function makeBuilding(x, z, w, h, d, color, roofColor) {
   const groundH = heightAt(Math.round(x + center), Math.round(z + center));
   g.position.set(x, groundH, z);
   scene.add(g);
-  return g;
 }
 
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 40; i++) {
   const gx = Math.floor(Math.random() * GRID);
   const gz = Math.floor(Math.random() * GRID);
   const dx = gx - center, dz = gz - center;
   const dist = Math.hypot(dx, dz);
-  if (dist < 8) continue;
-  if (dist > 28) continue;
+  if (dist < 8 || dist > 27) continue;
   const w = 1.5 + Math.random() * 3;
   const d = 1.5 + Math.random() * 3;
   const h = 2 + Math.random() * 8;
@@ -633,10 +617,10 @@ for (let i = 0; i < 50; i++) {
   makeBuilding(dx, dz, w, h, d, buildingColors[ci], roofColors[ri]);
 }
 
-updateLoader(65);
 // ============================================
 // TREES
 // ============================================
+updateLoader(80);
 function makeTree(x, z) {
   const g = new THREE.Group();
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6a4a3a, roughness: 0.9 });
@@ -658,71 +642,20 @@ function makeTree(x, z) {
   scene.add(g);
 }
 
-for (let i = 0; i < 60; i++) {
+for (let i = 0; i < 50; i++) {
   const gx = Math.floor(Math.random() * GRID);
   const gz = Math.floor(Math.random() * GRID);
   const dx = gx - center, dz = gz - center;
   const dist = Math.hypot(dx, dz);
-  if (dist > 6 && dist < 26 && Math.random() > 0.3) {
+  if (dist > 6 && dist < 25 && Math.random() > 0.3) {
     makeTree(dx, dz);
   }
 }
 
-updateLoader(75);
-// ============================================
-// WORLD ITEMS (3D Pickups)
-// ============================================
-function createItemMesh(type) {
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({
-    color: type.color,
-    emissive: type.color,
-    emissiveIntensity: 0.1,
-    roughness: 0.5,
-    metalness: 0.1
-  });
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), mat);
-  mesh.position.y = 0.2;
-  mesh.castShadow = true;
-  g.add(mesh);
-  
-  const ringMat = new THREE.MeshStandardMaterial({
-    color: type.color,
-    transparent: true,
-    opacity: 0.15,
-    side: THREE.DoubleSide
-  });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.25, 0.35, 16), ringMat);
-  ring.rotation.x = -Math.PI/2;
-  ring.position.y = 0.05;
-  g.add(ring);
-  
-  return g;
-}
-
-function spawnWorldItems3D() {
-  for (let i = 0; i < 30; i++) {
-    const type = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 4 + Math.random() * 24;
-    const x = Math.cos(angle) * dist;
-    const z = Math.sin(angle) * dist;
-    const gx = Math.round(x + center);
-    const gz = Math.round(z + center);
-    if (gx < 0 || gx >= GRID || gz < 0 || gz >= GRID) continue;
-    const y = heightAt(gx, gz);
-    const mesh = createItemMesh(type);
-    mesh.position.set(x, y, z);
-    scene.add(mesh);
-    worldItems.push({ x, y, z, type, mesh, bob: Math.random() * Math.PI * 2 });
-  }
-}
-spawnWorldItems3D();
-
-updateLoader(85);
 // ============================================
 // PLAYER
 // ============================================
+updateLoader(90);
 const player = {
   x: 0, z: 0,
   feetY: heightAt(Math.round(center), Math.round(center)),
@@ -777,3 +710,91 @@ joystickArea.addEventListener('pointerdown', (e) => {
 joystickArea.addEventListener('pointerup', () => {
   joyActive = false;
   joyVec = { x: 0, y: 0 };
+  joyKnob.style.transform = 'translate(-50%,-50%)';
+});
+joystickArea.addEventListener('pointermove', (e) => {
+  if (!joyActive) return;
+  let dx = e.clientX - joyCenter.x;
+  let dy = e.clientY - joyCenter.y;
+  const len = Math.hypot(dx, dy);
+  if (len > JOY_MAX) { dx = dx/len * JOY_MAX; dy = dy/len * JOY_MAX; }
+  joyKnob.style.transform = `translate(${-50 + (dx/JOY_MAX)*50}%, ${-50 + (dy/JOY_MAX)*50}%)`;
+  joyVec = { x: dx/JOY_MAX, y: dy/JOY_MAX };
+});
+
+// Jump
+document.getElementById('jumpBtn').addEventListener('pointerdown', () => {
+  if (player.onGround) {
+    player.velY = JUMP_SPEED;
+    player.onGround = false;
+  }
+});
+
+// Sprint
+let sprinting = false;
+document.getElementById('sprintBtn').addEventListener('pointerdown', () => {
+  sprinting = !sprinting;
+  document.getElementById('sprintBtn').classList.toggle('active');
+});
+
+// ============================================
+// RESIZE
+// ============================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================
+// GAME LOOP
+// ============================================
+const clock = new THREE.Clock();
+let gameTime = 720;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+
+  // Time
+  gameTime = (gameTime + dt * 2) % 1440;
+  const hours = Math.floor(gameTime / 60);
+  const mins = Math.floor(gameTime % 60);
+  document.getElementById('gameTime').textContent =
+    `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+
+  // Movement
+  const speed = sprinting ? SPRINT_SPEED : MOVE_SPEED;
+  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+  const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+  const moveX = joyVec.x;
+  const moveZ = -joyVec.y;
+  const mvx = (forward.x * moveZ + right.x * moveX) * speed * dt;
+  const mvz = (forward.z * moveZ + right.z * moveX) * speed * dt;
+  player.x += mvx;
+  player.z += mvz;
+  const half = center - 0.5;
+  player.x = Math.max(-half, Math.min(half, player.x));
+  player.z = Math.max(-half, Math.min(half, player.z));
+
+  // Gravity
+  const groundY = heightAt(Math.round(player.x + center), Math.round(player.z + center));
+  player.velY -= GRAVITY * dt;
+  const nextFeetY = player.feetY + player.velY * dt;
+  if (nextFeetY <= groundY) {
+    player.feetY = groundY;
+    player.velY = 0;
+    player.onGround = true;
+  } else {
+    player.feetY = nextFeetY;
+    player.onGround = false;
+  }
+
+  camera.position.set(player.x, player.feetY + EYE_HEIGHT, player.z);
+  camera.rotation.y = player.yaw;
+  camera.rotation.x = player.pitch;
+
+  renderer.render(scene, camera);
+}
+
+// ===========================================
