@@ -3,42 +3,51 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Craft City - Minecraft Style</title>
+<title>Gorba City - Endless Highway</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:sans-serif;touch-action:none}
   canvas{display:block;width:100vw;height:100vh}
 
-  /* D-PAD MINECRAFT CONTROLS */
-  #dpad{position:fixed;bottom:20px;left:20px;width:120px;height:120px;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px}
-  .dbtn{background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.4);border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:18px;touch-action:none}
-  .dbtn:active{background:rgba(255,255,255,0.5)}
+  #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;color:rgba(255,255,255,0.7);font-size:18px;pointer-events:none}
+  #lookArea{position:fixed;top:0;right:0;width:60%;height:100%;z-index:10;touch-action:none}
+
+  /* WALK CONTROLS (D-PAD) */
+  #dpad{position:fixed;bottom:20px;left:20px;width:110px;height:110px;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px}
+  .dbtn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;touch-action:none}
+  .dbtn:active{background:rgba(255,255,255,0.4)}
   #btnUp{grid-column:2;grid-row:1}
   #btnLeft{grid-column:1;grid-row:2}
-  #btnJump{grid-column:2;grid-row:2;background:rgba(255,255,255,0.35);border-radius:50%}
+  #btnJump{grid-column:2;grid-row:2;background:rgba(255,255,255,0.25);border-radius:50%}
   #btnRight{grid-column:3;grid-row:2}
   #btnDown{grid-column:2;grid-row:3}
 
-  /* TOUCH LOOK AREA */
-  #lookArea{position:fixed;top:0;right:0;width:60%;height:100%;z-index:10;touch-action:none}
+  /* CAR CONTROLS */
+  #enterCarBtn{position:fixed;bottom:140px;left:25px;z-index:25;background:rgba(255,165,0,0.8);border:none;color:#fff;padding:12px 18px;border-radius:25px;font-weight:bold;display:none;font-size:14px;box-shadow:0 0 15px rgba(255,165,0,0.4)}
+  #carPedals{position:fixed;bottom:20px;left:20px;z-index:25;display:none;flex-direction:column;gap:10px}
+  .pedal{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
+  .pedal:active{background:rgba(255,255,255,0.5)}
+  #carSteering{position:fixed;bottom:25px;right:25px;z-index:25;display:none;gap:15px}
+  .steerBtn{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
+  .steerBtn:active{background:rgba(255,255,255,0.5)}
 
-  /* MINECRAFT HUD & HOTBAR */
+  /* HOTBAR */
   #hudContainer{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
-  #hearts{display:flex;gap:2px;font-size:16px}
-  #hotbar{display:flex;background:rgba(0,0,0,0.6);border:3px solid #3c3c3c;padding:2px;gap:2px;border-radius:4px;pointer-events:auto}
-  .slot{width:40px;height:40px;background:rgba(255,255,255,0.1);border:2px solid #555;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;position:relative;cursor:pointer}
-  .slot.active{border-color:#fff;background:rgba(255,255,255,0.3)}
-  .slot .count{position:absolute;bottom:1px;right:3px;font-size:10px;font-weight:bold;color:#fff;text-shadow:1px 1px 1px #000}
-
-  #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;color:rgba(255,255,255,0.8);font-size:20px;pointer-events:none}
+  #hotbar{display:flex;background:rgba(0,0,0,0.7);border:2px solid #444;padding:2px;gap:2px;border-radius:6px;pointer-events:auto}
+  .slot{width:38px;height:38px;background:rgba(255,255,255,0.08);border:1px solid #555;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;position:relative;cursor:pointer}
+  .slot.active{border-color:#ff9900;background:rgba(255,255,255,0.2)}
+  .slot .count{position:absolute;bottom:1px;right:3px;font-size:9px;font-weight:bold;color:#fff}
+  
+  #interactHint{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);z-index:20;background:rgba(0,0,0,0.7);color:#fff;padding:8px 16px;border-radius:15px;font-size:13px;display:none;pointer-events:none}
 </style>
 </head>
 <body>
 
 <div id="crosshair">+</div>
 <div id="lookArea"></div>
+<div id="interactHint">برای تعامل کلیک کنید</div>
 
-<!-- MINECRAFT D-PAD -->
+<!-- WALK D-PAD -->
 <div id="dpad">
   <div class="dbtn" id="btnUp">▲</div>
   <div class="dbtn" id="btnLeft">◄</div>
@@ -47,193 +56,288 @@
   <div class="dbtn" id="btnDown">▼</div>
 </div>
 
-<!-- MINECRAFT HUD -->
+<!-- CAR UI -->
+<button id="enterCarBtn">🚗 نشستن در ماشین</button>
+<div id="carPedals">
+  <div class="pedal" id="gasBtn">⬆️</div>
+  <div class="pedal" id="brakeBtn">⬇️</div>
+</div>
+<div id="carSteering">
+  <div class="steerBtn" id="steerLeft">◄</div>
+  <div class="steerBtn" id="steerRight">►</div>
+</div>
+
+<!-- HOTBAR -->
 <div id="hudContainer">
-  <div id="hearts">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</div>
   <div id="hotbar">
     <div class="slot active" data-idx="0">🪓<span class="count">1</span></div>
     <div class="slot" data-idx="1"></div>
     <div class="slot" data-idx="2"></div>
     <div class="slot" data-idx="3"></div>
     <div class="slot" data-idx="4"></div>
-    <div class="slot" data-idx="5"></div>
-    <div class="slot" data-idx="6"></div>
-    <div class="slot" data-idx="7"></div>
-    <div class="slot" data-idx="8"></div>
   </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// THREE.JS SETUP
+// SCENE SETUP
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x7ec0ee);
-scene.fog = new THREE.FogExp2(0x7ec0ee, 0.015);
+scene.background = new THREE.Color(0x87ceeb);
+scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
 camera.rotation.order = 'YXZ';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-// RESIZE HANDLER
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// LIGHTS (SUN)
+// LIGHTS
 const ambient = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambient);
-
-const sun = new THREE.DirectionalLight(0xfffaed, 1.0);
-sun.position.set(60, 120, 40);
+const sun = new THREE.DirectionalLight(0xfffaed, 1.2);
+sun.position.set(80, 120, 50);
 sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
 scene.add(sun);
 
-// SUN MESH
-const sunGeo = new THREE.BoxGeometry(10, 10, 10);
-const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffe0 });
-const sunMesh = new THREE.Mesh(sunGeo, sunMat);
-sunMesh.position.set(100, 200, 80);
-scene.add(sunMesh);
-
-// CLOUDS (MINECRAFT STYLE)
-const cloudGroup = new THREE.Group();
-const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
-for(let i=0; i<25; i++){
-  const cGeo = new THREE.BoxGeometry(15 + Math.random()*20, 3, 10 + Math.random()*15);
-  const cloud = new THREE.Mesh(cGeo, cloudMat);
-  cloud.position.set((Math.random()-0.5)*300, 50 + Math.random()*10, (Math.random()-0.5)*300);
-  cloudGroup.add(cloud);
-}
-scene.add(cloudGroup);
-
-// GROUND
-const groundGeo = new THREE.PlaneGeometry(300, 300);
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x559933, roughness: 0.9 });
+// TERRAIN & ENDLESS CURVED ROAD
+const groundGeo = new THREE.PlaneGeometry(600, 600);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d6b2c, roughness: 0.9 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// PLAYER BODY
+// ROAD CURVE
+const roadPoints = [];
+for (let i = -300; i < 300; i += 10) {
+  roadPoints.push(new THREE.Vector3(Math.sin(i * 0.03) * 25, 0.02, i));
+}
+const roadCurve = new THREE.CatmullRomCurve3(roadPoints);
+const roadGeo = new THREE.TubeGeometry(roadCurve, 200, 4, 8, false);
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+const road = new THREE.Mesh(roadGeo, roadMat);
+road.scale.set(1, 0.01, 1);
+road.receiveShadow = true;
+scene.add(road);
+
+// REALISTIC HUMAN BODY (GTA STYLE)
 const playerGroup = new THREE.Group();
 scene.add(playerGroup);
 
-const bodyMat = new THREE.MeshStandardMaterial({ color: 0x008080 });
-const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
-body.position.y = 0.8;
-playerGroup.add(body);
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 });
+const shirtMat = new THREE.MeshStandardMaterial({ color: 0x1a365d, roughness: 0.7 });
+const jeansMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.8 });
 
-const legMat = new THREE.MeshStandardMaterial({ color: 0x000080 });
-const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), legMat);
-leftLeg.position.set(-0.15, 0.35, 0);
-const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), legMat);
-rightLeg.position.set(0.15, 0.35, 0);
+// Torso
+const torsoGeo = new THREE.CylinderGeometry(0.22, 0.18, 0.65, 12);
+const torso = new THREE.Mesh(torsoGeo, shirtMat);
+torso.position.y = 1.05;
+torso.castShadow = true;
+playerGroup.add(torso);
+
+// Legs & Shoes
+const legGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.7, 10);
+const leftLeg = new THREE.Mesh(legGeo, jeansMat);
+leftLeg.position.set(-0.12, 0.35, 0);
+const rightLeg = new THREE.Mesh(legGeo, jeansMat);
+rightLeg.position.set(0.12, 0.35, 0);
 playerGroup.add(leftLeg, rightLeg);
 
-// HELD ITEM (AXE IN RIGHT HAND)
+// FIRST PERSON HAND & MINI AXE
 const handGroup = new THREE.Group();
-const axeHandle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.05), new THREE.MeshStandardMaterial({color: 0x8b5a2b}));
-const axeBlade = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.05), new THREE.MeshStandardMaterial({color: 0xaaaaaa}));
-axeBlade.position.set(0.08, 0.2, 0);
-handGroup.add(axeHandle, axeBlade);
-handGroup.position.set(0.3, 0.2, -0.4);
+const armMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.45, 10), skinMat);
+armMesh.rotation.x = Math.PI / 3;
+armMesh.position.set(0, -0.1, 0.1);
+handGroup.add(armMesh);
+
+const axeGroup = new THREE.Group();
+const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35), new THREE.MeshStandardMaterial({color: 0x5c4033}));
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.02), new THREE.MeshStandardMaterial({color: 0x888888, metalness: 0.8, roughness: 0.2}));
+blade.position.set(0.05, 0.12, 0);
+axeGroup.add(handle, blade);
+axeGroup.position.set(0.05, 0.05, -0.2);
+axeGroup.rotation.set(0.2, -0.4, 0);
+handGroup.add(axeGroup);
+
+handGroup.position.set(0.25, -0.22, -0.35);
 camera.add(handGroup);
 scene.add(camera);
 
-// TREES & LOGS SYSTEM
-const trees = [];
-const logsOnGround = [];
-const treeTrunkGeo = new THREE.BoxGeometry(0.8, 4, 0.8);
-const treeLeavesGeo = new THREE.BoxGeometry(2.5, 2.5, 2.5);
-const trunkMat = new THREE.MeshStandardMaterial({ color: 0x674d3c });
-const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
-
-function spawnTree(x, z) {
+// REALISTIC TREES
+const treeList = [];
+function createRealisticTree(x, z) {
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(treeTrunkGeo, trunkMat);
-  trunk.position.y = 2;
+  
+  // Trunk
+  const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 4.5, 10);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e16, roughness: 0.9 });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  trunk.position.y = 2.25;
   trunk.castShadow = true;
+  trunk.receiveShadow = true;
   g.add(trunk);
 
-  const leaves = new THREE.Mesh(treeLeavesGeo, leavesMat);
-  leaves.position.y = 4.5;
-  leaves.castShadow = true;
-  g.add(leaves);
+  // Foliage Layer 1 & 2
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e4d2b, roughness: 0.8 });
+  const f1 = new THREE.Mesh(new THREE.ConeGeometry(2.2, 3.5, 8), leafMat);
+  f1.position.y = 4.5;
+  f1.castShadow = true;
+  const f2 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2.8, 8), leafMat);
+  f2.position.y = 6;
+  f2.castShadow = true;
+  g.add(f1, f2);
 
   g.position.set(x, 0, z);
   scene.add(g);
-
-  trees.push({ group: g, hits: 0, x, z });
+  treeList.push({ group: g, trunk, hits: 0, x, z });
 }
 
-// Spawning initial trees
-for(let i=0; i<45; i++){
-  const rx = (Math.random()-0.5)*180;
-  const rz = (Math.random()-0.5)*180;
-  if(Math.hypot(rx, rz) > 6) spawnTree(rx, rz);
+for(let i=0; i<60; i++){
+  const rx = (Math.random()-0.5)*250;
+  const rz = (Math.random()-0.5)*250;
+  if(Math.abs(rx) > 8) createRealisticTree(rx, rz);
 }
 
-// LOG ITEM (WHEN TREE IS CUT)
-const logGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-function dropLogs(x, z) {
-  for(let i=0; i<3; i++){
-    const log = new THREE.Mesh(logGeo, trunkMat);
-    log.position.set(x + (Math.random()-0.5)*1.5, 0.2, z + (Math.random()-0.5)*1.5);
-    scene.add(log);
-    logsOnGround.push(log);
-  }
-}
+// CLASSIC CAR WITH HOOD, TRUNK & ENGINE LEVEL
+const carGroup = new THREE.Group();
+const carBodyMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.5, roughness: 0.3 });
 
-// INVENTORY SYSTEM
+// Body Base
+const carBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.7, 4.2), carBodyMat);
+carBase.position.y = 0.55;
+carBase.castShadow = true;
+carGroup.add(carBase);
+
+// Cabin
+const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 }));
+cabin.position.set(0, 1.15, -0.2);
+carGroup.add(cabin);
+
+// Hood (Kapot)
+const hoodGroup = new THREE.Group();
+const hoodMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 1.2), carBodyMat);
+hoodMesh.position.set(0, 0, 0.6);
+hoodGroup.add(hoodMesh);
+hoodGroup.position.set(0, 0.9, 0.9);
+carGroup.add(hoodGroup);
+
+// Engine inside Hood
+const engineGroup = new THREE.Group();
+const engineBlock = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.7), new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9 }));
+engineGroup.add(engineBlock);
+engineGroup.position.set(0, 0.65, 1.3);
+carGroup.add(engineGroup);
+
+// Engine Level Label Canvas
+let engineLevel = 1;
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#ff9900'; ctx.font = 'Bold 40px Arial';
+ctx.fillText('Engine Lvl 1', 10, 70);
+const labelTex = new THREE.CanvasTexture(canvas);
+const labelGeo = new THREE.PlaneGeometry(0.8, 0.4);
+const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true });
+const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+labelMesh.position.set(0, 1.1, 1.3);
+labelMesh.rotation.x = -Math.PI / 4;
+carGroup.add(labelMesh);
+
+// Trunk (Sandoogh)
+const trunkGroup = new THREE.Group();
+const trunkMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 1.0), carBodyMat);
+trunkMesh.position.set(0, 0, -0.5);
+trunkGroup.add(trunkMesh);
+trunkGroup.position.set(0, 0.9, -1.5);
+carGroup.add(trunkGroup);
+
+// Wheels
+const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 16);
+const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+const wPositions = [[-0.95,0.32,1.3], [0.95,0.32,1.3], [-0.95,0.32,-1.3], [0.95,0.32,-1.3]];
+wPositions.forEach(p => {
+  const w = new THREE.Mesh(wheelGeo, wheelMat);
+  w.rotation.z = Math.PI / 2;
+  w.position.set(...p);
+  w.castShadow = true;
+  carGroup.add(w);
+});
+
+carGroup.position.set(5, 0, 10);
+scene.add(carGroup);
+
+// INVENTORY & SLOTS
 let selectedSlot = 0;
-const inventoryData = Array(9).fill(null);
-inventoryData[0] = { emoji: '🪓', count: 1, type: 'axe' };
-
+const inventoryData = [{ emoji: '🪓', type: 'axe', count: 1 }, null, null, null, null];
 const slotsUI = document.querySelectorAll('#hotbar .slot');
+
 slotsUI.forEach(slot => {
   slot.addEventListener('click', () => {
     slotsUI.forEach(s => s.classList.remove('active'));
     slot.classList.add('active');
     selectedSlot = parseInt(slot.dataset.idx);
-    handGroup.visible = (inventoryData[selectedSlot]?.type === 'axe');
+    const held = inventoryData[selectedSlot];
+    axeGroup.visible = (held && held.type === 'axe');
   });
 });
 
-function updateHotbarUI() {
-  slotsUI.forEach((slot, i) => {
-    const item = inventoryData[i];
-    if(item) {
-      slot.innerHTML = `${item.emoji}<span class="count">${item.count}</span>`;
-    } else {
-      slot.innerHTML = '';
-    }
-  });
-}
-
-// CONTROLS & MOVEMENT
-const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true };
+// PLAYER & CAR STATE
+const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false };
+const carState = { speed: 0, steer: 0, hoodOpen: false, trunkOpen: false };
 const moveState = { fwd: false, bwd: false, lft: false, rgt: false };
 
+// CONTROLS
 const bindBtn = (id, key) => {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; });
   el.addEventListener('pointerup', (e) => { e.preventDefault(); moveState[key] = false; });
-  el.addEventListener('pointerleave', () => { moveState[key] = false; });
 };
-bindBtn('btnUp', 'fwd');
-bindBtn('btnDown', 'bwd');
-bindBtn('btnLeft', 'lft');
-bindBtn('btnRight', 'rgt');
+bindBtn('btnUp', 'fwd'); bindBtn('btnDown', 'bwd'); bindBtn('btnLeft', 'lft'); bindBtn('btnRight', 'rgt');
 
 document.getElementById('btnJump').addEventListener('pointerdown', () => {
-  if (player.onGround) { player.velY = 6.5; player.onGround = false; }
+  if (player.onGround && !player.inCar) { player.velY = 6.5; player.onGround = false; }
+});
+
+// CAR PEDALS BINDING
+const carPedalBind = (id, action) => {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', () => carState[action] = true);
+  el.addEventListener('pointerup', () => carState[action] = false);
+};
+carPedalBind('gasBtn', 'gas'); carPedalBind('brakeBtn', 'brake');
+carPedalBind('steerLeft', 'left'); carPedalBind('steerRight', 'right');
+
+// ENTER / EXIT CAR
+const enterCarBtn = document.getElementById('enterCarBtn');
+enterCarBtn.addEventListener('click', () => {
+  player.inCar = !player.inCar;
+  if(player.inCar){
+    enterCarBtn.textContent = '🚪 پیاده شدن';
+    document.getElementById('dpad').style.display = 'none';
+    document.getElementById('carPedals').style.display = 'flex';
+    document.getElementById('carSteering').style.display = 'flex';
+    handGroup.visible = false;
+  } else {
+    enterCarBtn.textContent = '🚗 نشستن در ماشین';
+    document.getElementById('dpad').style.display = 'grid';
+    document.getElementById('carPedals').style.display = 'none';
+    document.getElementById('carSteering').style.display = 'none';
+    handGroup.visible = true;
+    player.x = carGroup.position.x - 2;
+    player.z = carGroup.position.z;
+  }
 });
 
 // TOUCH LOOK
@@ -247,100 +351,110 @@ lookArea.addEventListener('pointermove', e => {
   lx = e.clientX; ly = e.clientY;
   player.yaw -= dx * 0.005;
   player.pitch -= dy * 0.005;
-  player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
+  player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch));
 });
 
-// HIT TREES & PICKUP LOGS (CLICK/TOUCH IN WORLD)
+// RAYCASTING FOR TREES & CAR PARTS
 const raycaster = new THREE.Raycaster();
 window.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('#dpad') || e.target.closest('#hudContainer')) return;
+  if (e.target.closest('#dpad') || e.target.closest('#hudContainer') || e.target.closest('#carPedals') || e.target.closest('#carSteering') || player.inCar) return;
 
-  // Raycast from camera center
   raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-  
-  // 1. Check Tree Hit
-  const held = inventoryData[selectedSlot];
-  if (held && held.type === 'axe') {
-    for (let i = trees.length - 1; i >= 0; i--) {
-      const t = trees[i];
-      if (camera.position.distanceTo(t.group.position) < 5) {
-        const intersects = raycaster.intersectObjects(t.group.children);
-        if (intersects.length > 0) {
-          t.hits++;
-          // Swing Axe
-          handGroup.rotation.x = -0.8;
-          setTimeout(() => handGroup.rotation.x = 0, 150);
 
-          if (t.hits >= 3) {
-            scene.remove(t.group);
-            dropLogs(t.x, t.z);
-            trees.splice(i, 1);
-          }
-          return;
-        }
-      }
+  // 1. Click on Car Hood or Trunk
+  const carIntersects = raycaster.intersectObjects([hoodMesh, trunkMesh]);
+  if (carIntersects.length > 0) {
+    const hitObj = carIntersects[0].object;
+    if (hitObj === hoodMesh) {
+      carState.hoodOpen = !carState.hoodOpen;
+      hoodGroup.rotation.x = carState.hoodOpen ? -Math.PI / 3 : 0;
+    } else if (hitObj === trunkMesh) {
+      carState.trunkOpen = !carState.trunkOpen;
+      trunkGroup.rotation.x = carState.trunkOpen ? Math.PI / 3 : 0;
     }
+    return;
   }
 
-  // 2. Pickup Wood Logs
-  for (let i = logsOnGround.length - 1; i >= 0; i--) {
-    const log = logsOnGround[i];
-    if (camera.position.distanceTo(log.position) < 3.5) {
-      const intersects = raycaster.intersectObject(log);
-      if (intersects.length > 0) {
-        scene.remove(log);
-        logsOnGround.splice(i, 1);
-        
-        // Add to inventory
-        let woodSlot = inventoryData.find(s => s && s.type === 'wood');
-        if (woodSlot) {
-          woodSlot.count++;
-        } else {
-          const emptyIdx = inventoryData.findIndex(s => s === null);
-          if (emptyIdx !== -1) inventoryData[emptyIdx] = { emoji: '🪵', count: 1, type: 'wood' };
+  // 2. Realistic Tree Hit at Exact Point
+  const held = inventoryData[selectedSlot];
+  if (held && held.type === 'axe') {
+    treeList.forEach((t, index) => {
+      const intersects = raycaster.intersectObject(t.trunk);
+      if (intersects.length > 0 && camera.position.distanceTo(t.group.position) < 6) {
+        t.hits++;
+
+        // Swing Hand Animation
+        handGroup.rotation.x = -0.7;
+        setTimeout(() => handGroup.rotation.x = 0, 150);
+
+        // Wood Chip Effect at exact hit point
+        const pt = intersects[0].point;
+        const chip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0xc2b280 }));
+        chip.position.copy(pt);
+        scene.add(chip);
+        setTimeout(() => scene.remove(chip), 800);
+
+        if (t.hits >= 3) {
+          scene.remove(t.group);
+          treeList.splice(index, 1);
         }
-        updateHotbarUI();
-        return;
       }
-    }
+    });
   }
 });
 
-// GAME LOOP
+// MAIN GAME LOOP
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());
 
-  // Movement Calculation
-  const speed = 6;
-  let moveZ = (moveState.fwd ? 1 : 0) - (moveState.bwd ? 1 : 0);
-  let moveX = (moveState.rgt ? 1 : 0) - (moveState.lft ? 1 : 0);
+  if (!player.inCar) {
+    // Player Walking Physics
+    const speed = 5;
+    let moveZ = (moveState.fwd ? 1 : 0) - (moveState.bwd ? 1 : 0);
+    let moveX = (moveState.rgt ? 1 : 0) - (moveState.lft ? 1 : 0);
 
-  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
-  const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
 
-  player.x += (forward.x * moveZ + right.x * moveX) * speed * dt;
-  player.z += (forward.z * moveZ + right.z * moveX) * speed * dt;
+    player.x += (forward.x * moveZ + right.x * moveX) * speed * dt;
+    player.z += (forward.z * moveZ + right.z * moveX) * speed * dt;
 
-  // Gravity
-  player.velY -= 18 * dt;
-  player.y += player.velY * dt;
-  if (player.y <= 0) { player.y = 0; player.velY = 0; player.onGround = true; }
+    player.velY -= 18 * dt;
+    player.y += player.velY * dt;
+    if (player.y <= 0) { player.y = 0; player.velY = 0; player.onGround = true; }
 
-  // Update Body & Camera
-  playerGroup.position.set(player.x, player.y, player.z);
-  playerGroup.rotation.y = player.yaw;
+    playerGroup.position.set(player.x, player.y, player.z);
+    playerGroup.rotation.y = player.yaw;
 
-  camera.position.set(player.x, player.y + 1.5, player.z);
+    camera.position.set(player.x, player.y + 1.4, player.z);
+
+    // Distance Check to Show Enter Car Button
+    if (camera.position.distanceTo(carGroup.position) < 4) {
+      enterCarBtn.style.display = 'block';
+    } else {
+      enterCarBtn.style.display = 'none';
+    }
+  } else {
+    // Car Driving Physics
+    if (carState.gas) carState.speed = Math.min(carState.speed + 15 * dt, 25);
+    else if (carState.brake) carState.speed = Math.max(carState.speed - 15 * dt, -10);
+    else carState.speed *= 0.96;
+
+    if (carState.left) carGroup.rotation.y += 1.5 * dt;
+    if (carState.right) carGroup.rotation.y -= 1.5 * dt;
+
+    const carFwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
+    carGroup.position.addScaledVector(carFwd, carState.speed * dt);
+
+    // Attach Camera Inside Car Driver Seat
+    camera.position.copy(carGroup.position).add(new THREE.Vector3(-0.4, 1.2, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y));
+    playerGroup.position.copy(carGroup.position);
+  }
+
   camera.rotation.y = player.yaw;
   camera.rotation.x = player.pitch;
-
-  // Cloud Animation
-  cloudGroup.children.forEach(c => {
-    c.position.x += dt * 2;
-    if(c.position.x > 150) c.position.x = -150;
-  });
 
   renderer.render(scene, camera);
 }
