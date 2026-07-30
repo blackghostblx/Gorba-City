@@ -2,242 +2,236 @@
 <html lang="fa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سفر بی‌انتها در غروب</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gorba City - First Person Drive</title>
     <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
         body {
             margin: 0;
             overflow: hidden;
             background-color: #000;
-            font-family: sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         #canvas-container {
             width: 100vw;
             height: 100vh;
         }
-        #ui {
+        
+        /* دکمه‌های کنترل لمسی روی گوشی */
+        .touch-controls {
             position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 25px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 10;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            width: 65px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
             color: #fff;
-            text-align: center;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            pointer-events: none;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            touch-action: manipulation;
         }
-        h1 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
-            font-weight: 300;
-            letter-spacing: 2px;
-        }
-        p {
-            margin: 0;
-            font-size: 14px;
-            opacity: 0.8;
+        .btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
         }
     </style>
-    <!-- Three.js and Loaders -->
+    <!-- Three.js & FBX Loader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
 </head>
 <body>
 
-    <div id="ui">
-        <h1>INFINITE SUNSET DRIVE</h1>
-        <p>برای حرکت کلیک کنید و کلیدهای W A S D یا فلش‌ها را فشار دهید</p>
-    </div>
-
     <div id="canvas-container"></div>
 
+    <!-- کنترل‌های لمسی موبایل -->
+    <div class="touch-controls">
+        <div class="btn-group">
+            <div class="btn" id="btn-left">◀</div>
+            <div class="btn" id="btn-right">▶</div>
+        </div>
+        <div class="btn-group">
+            <div class="btn" id="btn-brake">🛑</div>
+            <div class="btn" id="btn-gas">⚡</div>
+        </div>
+    </div>
+
     <script>
-        // --- تنظیمات اصلی صحنه ---
+        // --- ۱. تنظیمات صحنه و دوربین ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         
-        // مه سینمایی غروب
-        const fogColor = new THREE.Color(0xff5533);
-        scene.background = new THREE.Color(0x2c1635);
-        scene.fog = new THREE.FogExp2(0xef5d3b, 0.008);
+        scene.background = new THREE.Color(0x1a0b2e);
+        scene.fog = new THREE.FogExp2(0xff5533, 0.005);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // --- نورپردازی غروب (Sunset Lighting) ---
-        const ambientLight = new THREE.AmbientLight(0x382843, 1.2);
+        // --- ۲. نورپردازی ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        // نور اصلی خورشید غروب
-        const sunLight = new THREE.DirectionalLight(0xff7700, 2.5);
+        const sunLight = new THREE.DirectionalLight(0xff7733, 2.0);
         sunLight.position.set(0, 20, -300);
-        sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
         scene.add(sunLight);
 
-        // خورشید رویایی (یک کره درخشان در افق)
-        const sunGeo = new THREE.SphereGeometry(40, 32, 32);
+        // خورشید افق
+        const sunGeo = new THREE.SphereGeometry(30, 32, 32);
         const sunMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
         const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(0, 15, -400);
+        sun.position.set(0, 10, -400);
         scene.add(sun);
 
-        // --- ماشین (Player Car) ---
+        // --- ۳. بارگذاری مدل ماشین خودت ---
         const carGroup = new THREE.Group();
         scene.add(carGroup);
 
-        // ایجاد یک ماشین هنری پیش‌فرض (در صورت عدم بارگذاری فایل FBX)
-        function createDefaultCar() {
-            const bodyGeo = new THREE.BoxGeometry(2, 0.8, 4);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.6;
-            body.castShadow = true;
-            carGroup.add(body);
-
-            const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 2);
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0xff3366, roughness: 0.1, metalness: 0.9 });
-            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-            cabin.position.set(0, 1.2, -0.2);
-            carGroup.add(cabin);
-
-            // چراغ‌های پشت ماشین
-            const tailLightGeo = new THREE.BoxGeometry(0.4, 0.1, 0.1);
-            const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
-            const tailLeft = new THREE.Mesh(tailLightGeo, tailLightMat);
-            tailLeft.position.set(-0.7, 0.7, 2.01);
-            const tailRight = tailLeft.clone();
-            tailRight.position.x = 0.7;
-            carGroup.add(tailLeft, tailRight);
-        }
-
-        // بارگذاری فایل FBX (اگر فایل car.fbx در کنار این HTML باشد اجرا می‌شود)
         const fbxLoader = new THREE.FBXLoader();
+        // بارگذاری فایل FBX دقیقاً بر اساس اسمی که فرستادی
         fbxLoader.load('_car.001_opada.fbx', (fbx) => {
-            fbx.scale.set(0.01, 0.01, 0.01); // تنظیم مقیاس مدل
-            fbx.traverse((child) => {
-                if (child.isMesh) child.castShadow = true;
-            });
+            fbx.scale.set(0.01, 0.01, 0.01); // در صورت نیاز اسکیل را تنظیم کن
+            fbx.rotation.y = Math.PI; // چرخاندن ماشین به سمت جلو
             carGroup.add(fbx);
-        }, undefined, () => {
-            // در صورت نبودن فایل، ماشین پیش‌فرض هنری ساخته می‌شود
-            createDefaultCar();
+        }, undefined, (err) => {
+            console.error('خطا در لود فایل FBX:', err);
         });
 
-        // --- تولید جاده و محیط بی‌انتها ---
-        const ROAD_WIDTH = 12;
+        // --- ۴. تنظیم دقیق زاویه دید از داخل کابین (First Person) ---
+        // موقعیت دوربین داخل ماشین (صندلی راننده)
+        // اگر لازم شد این اعداد را بسته به ابعاد دقیق فایلت کمی تغییر بده:
+        const COCKPIT_OFFSET = new THREE.Vector3(-0.35, 1.2, -0.2); 
+
+        // --- ۵. ساخت جاده و محیط ---
+        const ROAD_WIDTH = 14;
         const CHUNK_SIZE = 100;
-        const VISIBLE_CHUNKS = 8;
+        const VISIBLE_CHUNKS = 6;
         const chunks = [];
 
-        // متریال‌ها
-        const roadMat = new THREE.MeshStandardMaterial({ color: 0x1a1a24, roughness: 0.8 });
-        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-        const mountainMat = new THREE.MeshStandardMaterial({ color: 0x2a1835, roughness: 0.9, flatShading: true });
-        const treeMat = new THREE.MeshStandardMaterial({ color: 0x142018, flatShading: true });
+        const roadMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.6 });
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
 
         function createChunk(zPosition) {
             const chunk = new THREE.Group();
             chunk.position.z = zPosition;
 
-            // جاده
+            // سطح جاده
             const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, CHUNK_SIZE);
             const road = new THREE.Mesh(roadGeo, roadMat);
             road.rotation.x = -Math.PI / 2;
-            road.receiveShadow = true;
             chunk.add(road);
 
-            // خطوط وسط جاده
-            for (let i = -CHUNK_SIZE / 2; i < CHUNK_SIZE / 2; i += 10) {
-                const lineGeo = new THREE.PlaneGeometry(0.3, 4);
+            // خط کشی جاده
+            for (let i = -CHUNK_SIZE / 2; i < CHUNK_SIZE / 2; i += 12) {
+                const lineGeo = new THREE.PlaneGeometry(0.25, 5);
                 const line = new THREE.Mesh(lineGeo, lineMat);
                 line.rotation.x = -Math.PI / 2;
                 line.position.set(0, 0.02, i);
                 chunk.add(line);
             }
 
-            // کوه‌ها و مناظر دو طرف جاده (Stylized Art)
-            for (let side of [-1, 1]) {
-                // کوه‌ها
-                const mountainGeo = new THREE.ConeGeometry(20 + Math.random() * 15, 40 + Math.random() * 30, 4);
-                const mountain = new THREE.Mesh(mountainGeo, mountainMat);
-                mountain.position.set(side * (30 + Math.random() * 20), 15, (Math.random() - 0.5) * CHUNK_SIZE);
-                chunk.add(mountain);
-
-                // درخت‌ها
-                for (let t = 0; t < 5; t++) {
-                    const treeGeo = new THREE.ConeGeometry(2 + Math.random() * 2, 8 + Math.random() * 4, 5);
-                    const tree = new THREE.Mesh(treeGeo, treeMat);
-                    tree.position.set(side * (10 + Math.random() * 15), 4, (Math.random() - 0.5) * CHUNK_SIZE);
-                    chunk.add(tree);
-                }
-            }
-
             scene.add(chunk);
             return chunk;
         }
 
-        // مقداردهی اولیه چانک‌ها
         for (let i = 0; i < VISIBLE_CHUNKS; i++) {
             chunks.push(createChunk(-i * CHUNK_SIZE));
         }
 
-        // --- کنترل‌ها و حرکت ---
-        const keys = { Forward: false, Backward: false, Left: false, Right: false };
-        let speed = 0;
-        const maxSpeed = 1.2;
-        const accel = 0.02;
-        const friction = 0.98;
+        // --- ۶. سیستم کنترل (کیبورد + لمسی) ---
+        const input = { forward: false, backward: false, left: false, right: false };
 
+        // کیبورد
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') keys.Forward = true;
-            if (e.key === 's' || e.key === 'ArrowDown') keys.Backward = true;
-            if (e.key === 'a' || e.key === 'ArrowLeft') keys.Left = true;
-            if (e.key === 'd' || e.key === 'ArrowRight') keys.Right = true;
+            if (e.key === 'w' || e.key === 'ArrowUp') input.forward = true;
+            if (e.key === 's' || e.key === 'ArrowDown') input.backward = true;
+            if (e.key === 'a' || e.key === 'ArrowLeft') input.left = true;
+            if (e.key === 'd' || e.key === 'ArrowRight') input.right = true;
         });
-
         window.addEventListener('keyup', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') keys.Forward = false;
-            if (e.key === 's' || e.key === 'ArrowDown') keys.Backward = false;
-            if (e.key === 'a' || e.key === 'ArrowLeft') keys.Left = false;
-            if (e.key === 'd' || e.key === 'ArrowRight') keys.Right = false;
+            if (e.key === 'w' || e.key === 'ArrowUp') input.forward = false;
+            if (e.key === 's' || e.key === 'ArrowDown') input.backward = false;
+            if (e.key === 'a' || e.key === 'ArrowLeft') input.left = false;
+            if (e.key === 'd' || e.key === 'ArrowRight') input.right = false;
         });
 
-        // --- حلقه انیمیشن و رندر ---
+        // دکمه‌های لمسی
+        const setupTouch = (id, key) => {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); input[key] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); input[key] = false; });
+            el.addEventListener('mousedown', () => input[key] = true);
+            el.addEventListener('mouseup', () => input[key] = false);
+        };
+        setupTouch('btn-gas', 'forward');
+        setupTouch('btn-brake', 'backward');
+        setupTouch('btn-left', 'left');
+        setupTouch('btn-right', 'right');
+
+        // --- ۷. فیزیک و حرکت ---
+        let speed = 0;
+        const maxSpeed = 1.5;
+        const accel = 0.025;
+        const friction = 0.985;
+        let steeringAngle = 0;
+
         function animate() {
             requestAnimationFrame(animate);
 
-            // مدیریت سرعت
-            if (keys.Forward) speed = Math.min(speed + accel, maxSpeed);
-            else if (keys.Backward) speed = Math.max(speed - accel, -maxSpeed / 2);
+            // محاسبه سرعت
+            if (input.forward) speed = Math.min(speed + accel, maxSpeed);
+            else if (input.backward) speed = Math.max(speed - accel, -maxSpeed / 3);
             else speed *= friction;
 
-            // حرکت ماشین به جلو
+            // حرکت به جلو
             carGroup.position.z -= speed;
 
-            // فرمان‌پذیری چپ و راست
-            if (Math.abs(speed) > 0.05) {
-                if (keys.Left && carGroup.position.x > -ROAD_WIDTH / 2 + 1.5) carGroup.position.x -= 0.1;
-                if (keys.Right && carGroup.position.x < ROAD_WIDTH / 2 - 1.5) carGroup.position.x += 0.1;
+            // فرمان‌پذیری و انحراف ماشین
+            if (Math.abs(speed) > 0.02) {
+                if (input.left && carGroup.position.x > -ROAD_WIDTH / 2 + 1.8) {
+                    carGroup.position.x -= 0.08 * (speed / maxSpeed);
+                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, 0.08, 0.1);
+                } else if (input.right && carGroup.position.x < ROAD_WIDTH / 2 - 1.8) {
+                    carGroup.position.x += 0.08 * (speed / maxSpeed);
+                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, -0.08, 0.1);
+                } else {
+                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, 0, 0.1);
+                }
             }
+            carGroup.rotation.y = steeringAngle;
 
-            // تعقیب دوربین پشت ماشین (Third-Person View)
-            camera.position.x = THREE.MathUtils.lerp(camera.position.x, carGroup.position.x, 0.05);
-            camera.position.y = carGroup.position.y + 3.5;
-            camera.position.z = carGroup.position.z + 8;
-            camera.lookAt(carGroup.position.x, carGroup.position.y + 1, carGroup.position.z - 10);
+            // --- قرار دادن دوربین دقیقاً در چشم راننده (Cockpit) ---
+            camera.position.copy(carGroup.position).add(COCKPIT_OFFSET);
+            // نگاه به انتهای جاده از داخل ماشین
+            camera.lookAt(carGroup.position.x, carGroup.position.y + 1.1, carGroup.position.z - 20);
 
-            // انتقال خورشید همراه ماشین برای بی‌انتها ماندن غروب
+            // جابه‌جایی بی‌انتهای خورشید و جاده
             sun.position.z = carGroup.position.z - 400;
             sunLight.position.z = carGroup.position.z - 300;
 
-            // مدیریت بی‌انتهایی جاده (Endless Road Generation)
             chunks.forEach((chunk) => {
                 if (chunk.position.z > carGroup.position.z + CHUNK_SIZE) {
                     chunk.position.z -= VISIBLE_CHUNKS * CHUNK_SIZE;
@@ -249,7 +243,6 @@
 
         animate();
 
-        // تنظیم اندازه صفحه هنگام Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
