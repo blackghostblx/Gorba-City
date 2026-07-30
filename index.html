@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Gorba City - Auto Camera Driving</title>
+<title>Gorba City - Fixed Controls</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:sans-serif;touch-action:none}
@@ -33,7 +33,8 @@
   
   #carSteering{position:fixed;bottom:25px;left:25px;z-index:25;display:none;gap:15px}
   .steerBtn{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-  
+  .steerBtn:active{background:rgba(255,255,255,0.5)}
+
   #carPedals{position:fixed;bottom:20px;right:25px;z-index:25;display:none;flex-direction:column;gap:10px}
   .pedal{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
   .pedal:active{background:rgba(255,255,255,0.5)}
@@ -204,7 +205,7 @@ handGroup.position.set(0.25, -0.22, -0.35);
 camera.add(handGroup);
 scene.add(camera);
 
-// HIGH QUALITY CAR
+// CAR CREATION
 const carGroup = new THREE.Group();
 const carPaintMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.7, roughness: 0.2 });
 const chromeMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.95, roughness: 0.1 });
@@ -215,18 +216,19 @@ carBase.position.y = 0.75;
 carBase.castShadow = true;
 carGroup.add(carBase);
 
+// Front Grille & Bumper (Facing -Z in local coords)
 const grille = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 0.1), chromeMat);
-grille.position.set(0, 0.7, 2.42);
+grille.position.set(0, 0.7, -2.42);
 const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.15, 0.2), chromeMat);
-frontBumper.position.set(0, 0.45, 2.45);
+frontBumper.position.set(0, 0.45, -2.45);
 carGroup.add(grille, frontBumper);
 
 const cabinWindshield = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.85, 2.2), glassMat);
-cabinWindshield.position.set(0, 1.45, -0.2);
+cabinWindshield.position.set(0, 1.45, 0.2);
 carGroup.add(cabinWindshield);
 
 const dashBoard = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.6), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-dashBoard.position.set(0, 1.1, 0.6);
+dashBoard.position.set(0, 1.1, -0.6);
 carGroup.add(dashBoard);
 
 const steeringGroup = new THREE.Group();
@@ -234,13 +236,13 @@ const ringMesh = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.025, 8, 24), chr
 const centerMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05), new THREE.MeshStandardMaterial({ color: 0x111111 }));
 centerMesh.rotation.x = Math.PI / 2;
 steeringGroup.add(ringMesh, centerMesh);
-steeringGroup.position.set(-0.55, 1.22, 0.35);
-steeringGroup.rotation.x = -0.35;
+steeringGroup.position.set(-0.55, 1.22, -0.35);
+steeringGroup.rotation.x = 0.35;
 carGroup.add(steeringGroup);
 
 const seatMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
 const driverSeat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.7), seatMat);
-driverSeat.position.set(-0.55, 0.85, -0.2);
+driverSeat.position.set(-0.55, 0.85, 0.2);
 const passSeat = driverSeat.clone(); passSeat.position.x = 0.55;
 carGroup.add(driverSeat, passSeat);
 
@@ -260,7 +262,7 @@ scene.add(carGroup);
 
 // CONTROLS STATE
 const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false };
-const carState = { speed: 0, steerAngle: 0 };
+const carState = { speed: 0, steerAngle: 0, gas: false, brake: false, left: false, right: false };
 const moveState = { fwd: false, bwd: false, lft: false, rgt: false };
 
 const bindBtn = (id, key) => {
@@ -276,8 +278,8 @@ document.getElementById('btnJump').addEventListener('pointerdown', () => {
 
 const carPedalBind = (id, action) => {
   const el = document.getElementById(id);
-  el.addEventListener('pointerdown', () => carState[action] = true);
-  el.addEventListener('pointerup', () => carState[action] = false);
+  el.addEventListener('pointerdown', (e) => { e.preventDefault(); carState[action] = true; });
+  el.addEventListener('pointerup', (e) => { e.preventDefault(); carState[action] = false; });
 };
 carPedalBind('gasBtn', 'gas'); carPedalBind('brakeBtn', 'brake');
 carPedalBind('steerLeft', 'left'); carPedalBind('steerRight', 'right');
@@ -345,28 +347,30 @@ function animate() {
 
     updateChunks(player.x, player.z);
   } else {
-    // Car Driving & Physics
+    // CORRECTED CAR PHYSICS & DIRECTION
     const maxSpeedByLevel = 70 + (engineLevel * 45);
 
+    // Gas moves Forward (-Z direction), Brake moves Reverse (+Z direction)
     if (carState.gas) carState.speed = Math.min(carState.speed + 22 * dt, maxSpeedByLevel / 3.6);
     else if (carState.brake) carState.speed = Math.max(carState.speed - 22 * dt, -12);
-    else carState.speed *= 0.97;
+    else carState.speed *= 0.96;
 
+    // Steering Left turns vehicle Left (+Y Angle), Right turns Right (-Y Angle)
     if (carState.left) carState.steerAngle = Math.min(carState.steerAngle + 3 * dt, 0.8);
     else if (carState.right) carState.steerAngle = Math.max(carState.steerAngle - 3 * dt, -0.8);
     else carState.steerAngle *= 0.8;
 
     carGroup.rotation.y += carState.steerAngle * (carState.speed / 15) * dt;
-    steeringGroup.rotation.z = -carState.steerAngle * 2.2;
+    steeringGroup.rotation.z = carState.steerAngle * 2.2;
 
-    const carFwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
+    // Local Forward Vector is (0, 0, -1)
+    const carFwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
     carGroup.position.addScaledVector(carFwd, carState.speed * dt);
 
-    // AUTO CAMERA ROTATION WITH CAR DIRECTION
-    // زاویه دوربین همزمان و نرم به زاویه ماشین متصل می‌شود
+    // Auto Camera Follow
     player.yaw = carGroup.rotation.y;
 
-    // Driver Seat Position Calculation
+    // Driver Position inside cabin
     const driverSeatPos = new THREE.Vector3(-0.55, 1.4, -0.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
     camera.position.copy(carGroup.position).add(driverSeatPos);
 
