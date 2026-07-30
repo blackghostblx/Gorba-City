@@ -1,253 +1,487 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gorba City - First Person Drive</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        /* دکمه‌های کنترل لمسی روی گوشی */
-        .touch-controls {
-            position: absolute;
-            bottom: 25px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 30px;
-            z-index: 10;
-        }
-        .btn-group {
-            display: flex;
-            gap: 15px;
-        }
-        .btn {
-            width: 65px;
-            height: 65px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            color: #fff;
-            font-size: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(8px);
-            touch-action: manipulation;
-        }
-        .btn:active {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0.95);
-        }
-    </style>
-    <!-- Three.js & FBX Loader -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gorba City</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#241b3a">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  html,body{margin:0;padding:0;overflow:hidden;background:#100b1c;font-family:Tahoma,Arial,sans-serif;height:100%;}
+  canvas{display:block;touch-action:none;}
+
+  #loading{position:fixed;inset:0;background:#161616;color:#fff;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;z-index:100;transition:opacity .5s ease;}
+  #loading.hide{opacity:0;pointer-events:none;}
+  #loadingLogo{width:120px;height:120px;}
+  #loadingTitle{margin-top:14px;font-size:24px;font-weight:bold;letter-spacing:2px;
+    color:#f5c98a;font-family:'Comic Sans MS','Segoe Print',Tahoma,cursive,sans-serif;}
+  #loadingSub{margin-top:10px;font-size:12px;color:#aaa;letter-spacing:1px;}
+
+  #rotateOverlay{position:fixed;inset:0;background:#000;color:#fff;display:none;flex-direction:column;
+    align-items:center;justify-content:center;z-index:200;text-align:center;font-size:14px;padding:20px;}
+  @media (orientation: portrait){ #rotateOverlay{display:flex;} }
+  #rotateIcon{font-size:40px;margin-bottom:12px;animation:rot 1.6s ease-in-out infinite;}
+  @keyframes rot{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+
+  #genderSelect{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(16,11,28,0.55);backdrop-filter:blur(2px);}
+  #genderSelect h2{color:#fff;font-size:18px;margin-bottom:22px;text-shadow:0 2px 6px #000;}
+  #genderCards{display:flex;gap:22px;}
+  .card{width:120px;height:150px;border-radius:16px;background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,255,255,0.25);display:flex;flex-direction:column;align-items:center;
+    justify-content:center;color:#fff;font-size:15px;gap:10px;transition:transform .15s, background .15s;}
+  .card:active{transform:scale(0.94);background:rgba(255,255,255,0.2);}
+  .card .emoji{font-size:44px;}
+
+  #skipBtn{position:fixed;top:16px;left:16px;z-index:40;background:rgba(0,0,0,0.4);color:#fff;
+    border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:8px 16px;font-size:12px;display:none;}
+  #speedTag{position:fixed;bottom:18px;right:18px;color:#fff;font-size:12px;opacity:.75;
+    text-shadow:0 1px 3px #000;z-index:20;display:none;}
+</style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+<div id="loading">
+  <svg id="loadingLogo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M45 70 L30 20 L80 55 Z" stroke="#f5c98a" stroke-width="5" stroke-linejoin="round" fill="none"/>
+    <path d="M155 70 L170 20 L120 55 Z" stroke="#f5c98a" stroke-width="5" stroke-linejoin="round" fill="none"/>
+    <circle cx="100" cy="110" r="62" stroke="#f5c98a" stroke-width="5" fill="none"/>
+    <path d="M62 72 Q77 60 92 72" stroke="#f5c98a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M108 72 Q123 60 138 72" stroke="#f5c98a" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="77" cy="100" r="15" stroke="#f5c98a" stroke-width="4" fill="none"/>
+    <circle cx="123" cy="100" r="15" stroke="#f5c98a" stroke-width="4" fill="none"/>
+    <circle cx="77" cy="100" r="4" fill="#f5c98a"/>
+    <circle cx="123" cy="100" r="4" fill="#f5c98a"/>
+    <path d="M94 118 L106 118 L100 126 Z" stroke="#f5c98a" stroke-width="3" stroke-linejoin="round" fill="none"/>
+    <ellipse cx="100" cy="145" rx="9" ry="12" stroke="#f5c98a" stroke-width="4" fill="none"/>
+    <path d="M35 118 L65 122" stroke="#f5c98a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M33 132 L64 132" stroke="#f5c98a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M165 118 L135 122" stroke="#f5c98a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M167 132 L136 132" stroke="#f5c98a" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+  <div id="loadingTitle">Gorba City</div>
+  <div id="loadingSub">در حال آماده‌سازی جاده...</div>
+</div>
 
-    <!-- کنترل‌های لمسی موبایل -->
-    <div class="touch-controls">
-        <div class="btn-group">
-            <div class="btn" id="btn-left">◀</div>
-            <div class="btn" id="btn-right">▶</div>
-        </div>
-        <div class="btn-group">
-            <div class="btn" id="btn-brake">🛑</div>
-            <div class="btn" id="btn-gas">⚡</div>
-        </div>
-    </div>
+<div id="rotateOverlay">
+  <div id="rotateIcon">📱</div>
+  <div>گوشیتو بچرخون، این بازی افقیه</div>
+</div>
 
-    <script>
-        // --- ۱. تنظیمات صحنه و دوربین ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        
-        scene.background = new THREE.Color(0x1a0b2e);
-        scene.fog = new THREE.FogExp2(0xff5533, 0.005);
+<div id="genderSelect">
+  <h2>شخصیتت رو انتخاب کن</h2>
+  <div id="genderCards">
+    <div class="card" id="pickFemale"><div class="emoji">👩</div>زن</div>
+    <div class="card" id="pickMale"><div class="emoji">👨</div>مرد</div>
+  </div>
+</div>
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        container.appendChild(renderer.domElement);
+<div id="skipBtn">رد کردن ⏭</div>
+<div id="speedTag">در حال رانندگی...</div>
 
-        // --- ۲. نورپردازی ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ================= basic scene =================
+const scene = new THREE.Scene();
+const HORIZON = 0x2a1f45;
+scene.fog = new THREE.Fog(HORIZON, 60, 320);
 
-        const sunLight = new THREE.DirectionalLight(0xff7733, 2.0);
-        sunLight.position.set(0, 20, -300);
-        scene.add(sunLight);
+const camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHeight, 0.1, 500);
+camera.rotation.order = 'YXZ';
 
-        // خورشید افق
-        const sunGeo = new THREE.SphereGeometry(30, 32, 32);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-        const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(0, 10, -400);
-        scene.add(sun);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
 
-        // --- ۳. بارگذاری مدل ماشین خودت ---
-        const carGroup = new THREE.Group();
-        scene.add(carGroup);
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-        const fbxLoader = new THREE.FBXLoader();
-        // بارگذاری فایل FBX دقیقاً بر اساس اسمی که فرستادی
-        fbxLoader.load('_car.001_opada.fbx', (fbx) => {
-            fbx.scale.set(0.01, 0.01, 0.01); // در صورت نیاز اسکیل را تنظیم کن
-            fbx.rotation.y = Math.PI; // چرخاندن ماشین به سمت جلو
-            carGroup.add(fbx);
-        }, undefined, (err) => {
-            console.error('خطا در لود فایل FBX:', err);
-        });
+// ================= fantasy sky (follows camera) =================
+const skyGroup = new THREE.Group();
+scene.add(skyGroup);
 
-        // --- ۴. تنظیم دقیق زاویه دید از داخل کابین (First Person) ---
-        // موقعیت دوربین داخل ماشین (صندلی راننده)
-        // اگر لازم شد این اعداد را بسته به ابعاد دقیق فایلت کمی تغییر بده:
-        const COCKPIT_OFFSET = new THREE.Vector3(-0.35, 1.2, -0.2); 
+const skyGeo = new THREE.SphereGeometry(400, 24, 24);
+const skyPos = skyGeo.attributes.position;
+const skyColors = [];
+const topColor = new THREE.Color(0x2b1560);
+const midColor = new THREE.Color(0x8a3f8a);
+const lowColor = new THREE.Color(0xff9a6a);
+for(let i=0;i<skyPos.count;i++){
+  const y = skyPos.getY(i)/400;
+  const t = (y+1)/2;
+  let c;
+  if(t>0.5){ c = topColor.clone().lerp(midColor, 1-((t-0.5)*2)); }
+  else { c = midColor.clone().lerp(lowColor, 1-t*2); }
+  skyColors.push(c.r,c.g,c.b);
+}
+skyGeo.setAttribute('color', new THREE.Float32BufferAttribute(skyColors,3));
+const skyMat = new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.BackSide, fog:false});
+const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+skyGroup.add(skyMesh);
 
-        // --- ۵. ساخت جاده و محیط ---
-        const ROAD_WIDTH = 14;
-        const CHUNK_SIZE = 100;
-        const VISIBLE_CHUNKS = 6;
-        const chunks = [];
+const moon = new THREE.Mesh(new THREE.SphereGeometry(14,16,16), new THREE.MeshBasicMaterial({color:0xfff3d6, fog:false}));
+moon.position.set(-90,110,-220);
+skyGroup.add(moon);
 
-        const roadMat = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.6 });
-        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+const starGeo = new THREE.BufferGeometry();
+const starPos = [];
+for(let i=0;i<400;i++){
+  const r = 350;
+  const theta = Math.random()*Math.PI*2;
+  const phi = Math.random()*Math.PI*0.5;
+  starPos.push(r*Math.sin(phi)*Math.cos(theta), Math.abs(r*Math.cos(phi))*0.6+40, r*Math.sin(phi)*Math.sin(theta));
+}
+starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos,3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff, size:1.6, fog:false}));
+skyGroup.add(stars);
 
-        function createChunk(zPosition) {
-            const chunk = new THREE.Group();
-            chunk.position.z = zPosition;
+// ================= road (curved, glowing, endless) =================
+const ROAD_WIDTH = 10;
+const SEG_LEN = 25;
+const SEG_STEPS = 6;
+const N_SEG = 18;
 
-            // سطح جاده
-            const roadGeo = new THREE.PlaneGeometry(ROAD_WIDTH, CHUNK_SIZE);
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            road.rotation.x = -Math.PI / 2;
-            chunk.add(road);
+function curveX(z){
+  const d = -z;
+  const amp = Math.min(34, 3 + d*0.02);
+  const freq = Math.min(0.085, 0.02 + d*0.00005);
+  return amp*Math.sin(d*freq);
+}
 
-            // خط کشی جاده
-            for (let i = -CHUNK_SIZE / 2; i < CHUNK_SIZE / 2; i += 12) {
-                const lineGeo = new THREE.PlaneGeometry(0.25, 5);
-                const line = new THREE.Mesh(lineGeo, lineMat);
-                line.rotation.x = -Math.PI / 2;
-                line.position.set(0, 0.02, i);
-                chunk.add(line);
-            }
+function buildRoadRibbon(zStart, zEnd, steps){
+  const half = ROAD_WIDTH/2;
+  const positions = [], colors = [];
+  const leftC = new THREE.Color(0xff5fd8), midC = new THREE.Color(0x241b3a), rightC = new THREE.Color(0x5fe0ff);
+  for(let i=0;i<=steps;i++){
+    const z = zStart + (zEnd-zStart)*(i/steps);
+    const cx = curveX(z);
+    positions.push(cx-half,0,z,  cx,0,z,  cx+half,0,z);
+    colors.push(leftC.r,leftC.g,leftC.b, midC.r,midC.g,midC.b, rightC.r,rightC.g,rightC.b);
+  }
+  const indices = [];
+  for(let i=0;i<steps;i++){
+    const r0=i*3, r1=(i+1)*3;
+    indices.push(r0,r1,r0+1,  r1,r1+1,r0+1);
+    indices.push(r0+1,r1+1,r0+2,  r1+1,r1+2,r0+2);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors,3));
+  geo.setIndex(indices);
+  return geo;
+}
 
-            scene.add(chunk);
-            return chunk;
-        }
+const roadMat = new THREE.MeshBasicMaterial({vertexColors:true, side:THREE.DoubleSide, fog:true});
+const segments = [];
+let frontZ = 0;
+for(let i=0;i<N_SEG;i++){
+  const zStart = frontZ, zEnd = frontZ - SEG_LEN;
+  const mesh = new THREE.Mesh(buildRoadRibbon(zStart,zEnd,SEG_STEPS), roadMat);
+  scene.add(mesh);
+  segments.push({mesh, zStart, zEnd});
+  frontZ = zEnd;
+}
 
-        for (let i = 0; i < VISIBLE_CHUNKS; i++) {
-            chunks.push(createChunk(-i * CHUNK_SIZE));
-        }
+// ================= decorative fantasy scenery =================
+function makeCluster(){
+  const g = new THREE.Group();
+  const type = Math.random();
+  if(type<0.4){
+    const h = 6+Math.random()*14;
+    const colors=[0x6a3fb8,0x3f6ab8,0xb83f8a];
+    const m = new THREE.Mesh(new THREE.ConeGeometry(3+Math.random()*3,h,5), new THREE.MeshBasicMaterial({color:colors[Math.floor(Math.random()*3)]}));
+    m.position.y = h/2;
+    g.add(m);
+  } else if(type<0.7){
+    const s = 2+Math.random()*2;
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), new THREE.MeshBasicMaterial({color:0x8a6ad0}));
+    m.position.y = 10+Math.random()*14;
+    g.userData.island = m;
+    g.userData.baseY = m.position.y;
+    g.userData.bob = Math.random()*Math.PI*2;
+    g.add(m);
+  } else {
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,3,6), new THREE.MeshBasicMaterial({color:0x2b1e3d}));
+    trunk.position.y=1.5;
+    const colors=[0xff6ad5,0x6ad5ff,0xd5ff6a];
+    const top = new THREE.Mesh(new THREE.SphereGeometry(1.1,7,7), new THREE.MeshBasicMaterial({color:colors[Math.floor(Math.random()*3)]}));
+    top.position.y=3.4;
+    g.add(trunk,top);
+  }
+  return g;
+}
+const clusters = [];
+const N_CLUSTERS = 24;
+for(let i=0;i<N_CLUSTERS;i++){
+  const g = makeCluster();
+  const z = -10 - i*20 - Math.random()*15;
+  const side = i%2===0?-1:1;
+  const dist = 9+Math.random()*22;
+  g.position.set(curveX(z)+side*dist, g.position.y||0, z);
+  scene.add(g);
+  clusters.push(g);
+}
 
-        // --- ۶. سیستم کنترل (کیبورد + لمسی) ---
-        const input = { forward: false, backward: false, left: false, right: false };
+// ================= character & car (cinematic) =================
+const SCHEMES = {
+  female: {gender:'female', outfit:0xff5fd8, skin:0xffd9b3, hair:0x2b1b12, pants:0x241b3a},
+  male:   {gender:'male',   outfit:0x5fe0ff, skin:0xf0c39a, hair:0x2b1b12, pants:0x1b2740}
+};
 
-        // کیبورد
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') input.forward = true;
-            if (e.key === 's' || e.key === 'ArrowDown') input.backward = true;
-            if (e.key === 'a' || e.key === 'ArrowLeft') input.left = true;
-            if (e.key === 'd' || e.key === 'ArrowRight') input.right = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'w' || e.key === 'ArrowUp') input.forward = false;
-            if (e.key === 's' || e.key === 'ArrowDown') input.backward = false;
-            if (e.key === 'a' || e.key === 'ArrowLeft') input.left = false;
-            if (e.key === 'd' || e.key === 'ArrowRight') input.right = false;
-        });
+function makeCharacter(s){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.22,1.0,8), new THREE.MeshBasicMaterial({color:s.outfit}));
+  body.position.y=0.9; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22,10,10), new THREE.MeshBasicMaterial({color:s.skin}));
+  head.position.y=1.55; g.add(head);
+  if(s.gender==='female'){
+    const pt = new THREE.Mesh(new THREE.ConeGeometry(0.09,0.5,6), new THREE.MeshBasicMaterial({color:s.hair}));
+    pt.position.set(0,1.45,-0.22); pt.rotation.x = Math.PI*0.55; g.add(pt);
+  } else {
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.23,10,10,0,Math.PI*2,0,Math.PI/2), new THREE.MeshBasicMaterial({color:s.hair}));
+    hair.position.y=1.62; g.add(hair);
+  }
+  const armMat = new THREE.MeshBasicMaterial({color:s.skin});
+  const armGeo = new THREE.CylinderGeometry(0.06,0.06,0.6,6);
+  const armL = new THREE.Mesh(armGeo,armMat); armL.position.set(-0.32,0.95,0); armL.rotation.z=0.15; g.add(armL);
+  const armR = new THREE.Mesh(armGeo,armMat); armR.position.set(0.32,0.95,0); armR.rotation.z=-0.15; g.add(armR);
+  const legMat = new THREE.MeshBasicMaterial({color:s.pants});
+  const legGeo = new THREE.CylinderGeometry(0.09,0.09,0.75,6);
+  const legL = new THREE.Mesh(legGeo,legMat); legL.position.set(-0.12,0.35,0); g.add(legL);
+  const legR = new THREE.Mesh(legGeo,legMat); legR.position.set(0.12,0.35,0); g.add(legR);
+  return g;
+}
 
-        // دکمه‌های لمسی
-        const setupTouch = (id, key) => {
-            const el = document.getElementById(id);
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); input[key] = true; });
-            el.addEventListener('touchend', (e) => { e.preventDefault(); input[key] = false; });
-            el.addEventListener('mousedown', () => input[key] = true);
-            el.addEventListener('mouseup', () => input[key] = false);
-        };
-        setupTouch('btn-gas', 'forward');
-        setupTouch('btn-brake', 'backward');
-        setupTouch('btn-left', 'left');
-        setupTouch('btn-right', 'right');
+function makeCarExterior(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.8,0.6,3.6), new THREE.MeshBasicMaterial({color:0xff5fd8}));
+  body.position.y=0.55; g.add(body);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6,0.55,1.8), new THREE.MeshBasicMaterial({color:0x241b3a}));
+  cabin.position.set(0,1.05,-0.2); g.add(cabin);
+  const wheelGeo = new THREE.CylinderGeometry(0.32,0.32,0.28,10);
+  const wheelMat = new THREE.MeshBasicMaterial({color:0x111111});
+  [[-0.85,0.32,1.15],[0.85,0.32,1.15],[-0.85,0.32,-1.15],[0.85,0.32,-1.15]].forEach(p=>{
+    const w = new THREE.Mesh(wheelGeo, wheelMat);
+    w.rotation.z = Math.PI/2;
+    w.position.set(p[0],p[1],p[2]);
+    g.add(w);
+  });
+  const hlMat = new THREE.MeshBasicMaterial({color:0xfff6c8});
+  const hlGeo = new THREE.SphereGeometry(0.12,6,6);
+  const hl1 = new THREE.Mesh(hlGeo,hlMat); hl1.position.set(-0.6,0.55,1.82); g.add(hl1);
+  const hl2 = new THREE.Mesh(hlGeo,hlMat); hl2.position.set(0.6,0.55,1.82); g.add(hl2);
 
-        // --- ۷. فیزیک و حرکت ---
-        let speed = 0;
-        const maxSpeed = 1.5;
-        const accel = 0.025;
-        const friction = 0.985;
-        let steeringAngle = 0;
+  const doorPivot = new THREE.Object3D();
+  doorPivot.position.set(-0.9,0.55,0.3);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.9,1.4), new THREE.MeshBasicMaterial({color:0xff5fd8}));
+  door.position.set(0,0,-0.6);
+  doorPivot.add(door);
+  g.add(doorPivot);
+  g.userData.doorPivot = doorPivot;
+  return g;
+}
 
-        function animate() {
-            requestAnimationFrame(animate);
+const carExt = makeCarExterior();
+carExt.position.set(0,0,0);
+scene.add(carExt);
 
-            // محاسبه سرعت
-            if (input.forward) speed = Math.min(speed + accel, maxSpeed);
-            else if (input.backward) speed = Math.max(speed - accel, -maxSpeed / 3);
-            else speed *= friction;
+let character = null;
 
-            // حرکت به جلو
-            carGroup.position.z -= speed;
+// ================= interior (attached to camera on driving start) =================
+const interiorGroup = new THREE.Group();
+const dash = new THREE.Mesh(new THREE.BoxGeometry(2.6,0.35,0.6), new THREE.MeshBasicMaterial({color:0x1c1530}));
+dash.position.set(0,-0.55,-0.9); interiorGroup.add(dash);
+const pillarGeo = new THREE.BoxGeometry(0.12,1.3,0.12);
+const pillarMat = new THREE.MeshBasicMaterial({color:0x120c20});
+const pL = new THREE.Mesh(pillarGeo,pillarMat); pL.position.set(-1.35,0.3,-1.0); interiorGroup.add(pL);
+const pR = new THREE.Mesh(pillarGeo,pillarMat); pR.position.set(1.35,0.3,-1.0); interiorGroup.add(pR);
+const visor = new THREE.Mesh(new THREE.BoxGeometry(2.8,0.1,0.3), new THREE.MeshBasicMaterial({color:0x120c20}));
+visor.position.set(0,0.62,-1.0); interiorGroup.add(visor);
 
-            // فرمان‌پذیری و انحراف ماشین
-            if (Math.abs(speed) > 0.02) {
-                if (input.left && carGroup.position.x > -ROAD_WIDTH / 2 + 1.8) {
-                    carGroup.position.x -= 0.08 * (speed / maxSpeed);
-                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, 0.08, 0.1);
-                } else if (input.right && carGroup.position.x < ROAD_WIDTH / 2 - 1.8) {
-                    carGroup.position.x += 0.08 * (speed / maxSpeed);
-                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, -0.08, 0.1);
-                } else {
-                    steeringAngle = THREE.MathUtils.lerp(steeringAngle, 0, 0.1);
-                }
-            }
-            carGroup.rotation.y = steeringAngle;
+const wheelGroup = new THREE.Group();
+wheelGroup.position.set(0,-0.4,-0.78);
+const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.3,0.045,8,20), new THREE.MeshBasicMaterial({color:0x2a2230}));
+wheelRim.rotation.x = Math.PI/2.15;
+wheelGroup.add(wheelRim);
+const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.06,10), new THREE.MeshBasicMaterial({color:0x2a2230}));
+hub.rotation.x = Math.PI/2; wheelGroup.add(hub);
+interiorGroup.add(wheelGroup);
 
-            // --- قرار دادن دوربین دقیقاً در چشم راننده (Cockpit) ---
-            camera.position.copy(carGroup.position).add(COCKPIT_OFFSET);
-            // نگاه به انتهای جاده از داخل ماشین
-            camera.lookAt(carGroup.position.x, carGroup.position.y + 1.1, carGroup.position.z - 20);
+let handColor = 0xffd9b3;
+const handGeo = new THREE.SphereGeometry(0.08,8,8);
+const handL = new THREE.Mesh(handGeo, new THREE.MeshBasicMaterial({color:handColor}));
+handL.position.set(-0.27,-0.06,0.15);
+const handR = new THREE.Mesh(handGeo, new THREE.MeshBasicMaterial({color:handColor}));
+handR.position.set(0.27,-0.06,0.15);
+wheelGroup.add(handL, handR);
 
-            // جابه‌جایی بی‌انتهای خورشید و جاده
-            sun.position.z = carGroup.position.z - 400;
-            sunLight.position.z = carGroup.position.z - 300;
+// ================= state machine =================
+let gameState = 'loading';
+let stateTime = 0;
+const clock = new THREE.Clock();
 
-            chunks.forEach((chunk) => {
-                if (chunk.position.z > carGroup.position.z + CHUNK_SIZE) {
-                    chunk.position.z -= VISIBLE_CHUNKS * CHUNK_SIZE;
-                }
-            });
+camera.position.set(-6,2.4,7);
+camera.lookAt(0,0.9,0);
 
-            renderer.render(scene, camera);
-        }
+const loadingEl = document.getElementById('loading');
+const genderEl = document.getElementById('genderSelect');
+const skipEl = document.getElementById('skipBtn');
+const speedTag = document.getElementById('speedTag');
 
-        animate();
+setTimeout(()=>{
+  loadingEl.classList.add('hide');
+  setTimeout(()=>{ loadingEl.style.display='none'; genderEl.style.display='flex'; gameState='select'; }, 500);
+}, 1200);
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
+function choose(genderKey){
+  const scheme = SCHEMES[genderKey];
+  handColor = scheme.skin;
+  handL.material.color.setHex(scheme.skin);
+  handR.material.color.setHex(scheme.skin);
+  character = makeCharacter(scheme);
+  character.position.set(-3,0,3.2);
+  character.rotation.y = Math.PI*0.15;
+  scene.add(character);
+  genderEl.style.display='none';
+  skipEl.style.display='block';
+  gameState='approach'; stateTime=0;
+}
+document.getElementById('pickFemale').addEventListener('click', ()=>choose('female'));
+document.getElementById('pickMale').addEventListener('click', ()=>choose('male'));
+
+function goToDriving(){
+  if(character) character.visible=false;
+  carExt.visible=false;
+  camera.position.set(0,1.15,0.25);
+  camera.rotation.set(0,0,0);
+  camera.add(interiorGroup);
+  skipEl.style.display='none';
+  speedTag.style.display='block';
+  gameState='driving'; stateTime=0;
+}
+skipEl.addEventListener('click', goToDriving);
+
+// ================= steering input =================
+let steer = 0, steerTarget = 0, dragging=false;
+window.addEventListener('pointerdown', e=>{ dragging=true; updateSteerTarget(e.clientX); });
+window.addEventListener('pointermove', e=>{ if(dragging) updateSteerTarget(e.clientX); });
+window.addEventListener('pointerup', ()=>{ dragging=false; });
+function updateSteerTarget(x){
+  steerTarget = Math.max(-1, Math.min(1, ((x/window.innerWidth)-0.5)*2.4));
+}
+
+// ================= animate =================
+function lerpV3(a,b,t){ return a.clone().lerp(b,t); }
+const tmpObj = new THREE.Object3D();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+  stateTime += dt;
+  const elapsed = clock.getElapsedTime();
+
+  skyGroup.position.copy(camera.position);
+
+  clusters.forEach(g=>{
+    if(g.userData.island){
+      g.userData.island.position.y = g.userData.baseY + Math.sin(elapsed+g.userData.bob)*0.6;
+    }
+  });
+
+  if(gameState==='approach'){
+    const dur=1.4, t=Math.min(1,stateTime/dur);
+    const p = lerpV3(new THREE.Vector3(-6,2.4,7), new THREE.Vector3(-2.6,1.5,4.2), t);
+    camera.position.copy(p);
+    const look = lerpV3(new THREE.Vector3(0,0.9,0), new THREE.Vector3(-1,0.9,1), t);
+    camera.lookAt(look);
+    if(t>=1){ gameState='walk'; stateTime=0; }
+  }
+  else if(gameState==='walk'){
+    const dur=1.3, t=Math.min(1,stateTime/dur);
+    if(character){
+      const start = new THREE.Vector3(-3,0,3.2), end = new THREE.Vector3(-1.1,0,0.9);
+      character.position.x = start.x+(end.x-start.x)*t;
+      character.position.z = start.z+(end.z-start.z)*t;
+      character.position.y = Math.abs(Math.sin(stateTime*10))*0.05;
+    }
+    if(t>=1){ gameState='enter'; stateTime=0; }
+  }
+  else if(gameState==='enter'){
+    const dur=1.1, t=Math.min(1,stateTime/dur);
+    const doorPivot = carExt.userData.doorPivot;
+    if(t<0.5){
+      doorPivot.rotation.y = -1.4*(t/0.5);
+      if(character){
+        character.position.x = -1.1+(-0.9-(-1.1))*(t/0.5);
+        character.position.z = 0.9+(0.3-0.9)*(t/0.5);
+        character.scale.setScalar(1-0.15*(t/0.5));
+      }
+    } else {
+      if(character) character.visible=false;
+      doorPivot.rotation.y = -1.4*(1-((t-0.5)/0.5));
+    }
+    if(t>=1){ gameState='transition'; stateTime=0; carExt.visible=false; }
+  }
+  else if(gameState==='transition'){
+    const dur=1.6, t=Math.min(1,stateTime/dur);
+    const startPos = new THREE.Vector3(-2.6,1.5,4.2);
+    const endPos = new THREE.Vector3(0,1.15,0.25);
+    camera.position.copy(lerpV3(startPos,endPos,t));
+    tmpObj.position.copy(camera.position);
+    tmpObj.lookAt(0,1.15,-10);
+    camera.quaternion.slerp(tmpObj.quaternion, t);
+    if(t>=1){ goToDriving(); }
+  }
+  else if(gameState==='driving'){
+    if(!dragging) steerTarget += (0-steerTarget)*Math.min(1,dt*2.2);
+    steer += (steerTarget-steer)*Math.min(1,dt*6);
+
+    const speed = 16 + Math.min(22, stateTime*0.14);
+    camera.position.z -= speed*dt;
+
+    const lateral = steer*(ROAD_WIDTH/2-1.3);
+    const cx = curveX(camera.position.z);
+    camera.position.x = cx + lateral;
+
+    const dz=1;
+    const heading = Math.atan2(curveX(camera.position.z-dz)-curveX(camera.position.z+dz), 2*dz);
+    camera.rotation.y = heading + steer*0.05;
+    camera.rotation.z = -steer*0.08;
+    camera.rotation.x = 0;
+
+    wheelGroup.rotation.z = steer*1.4;
+
+    segments.forEach(seg=>{
+      if(seg.zStart > camera.position.z + SEG_LEN){
+        const newZStart = frontZ, newZEnd = frontZ-SEG_LEN;
+        seg.mesh.geometry.dispose();
+        seg.mesh.geometry = buildRoadRibbon(newZStart,newZEnd,SEG_STEPS);
+        seg.zStart=newZStart; seg.zEnd=newZEnd; frontZ=newZEnd;
+      }
+    });
+    clusters.forEach(g=>{
+      if(g.position.z > camera.position.z+40){
+        g.position.z = camera.position.z - (250+Math.random()*150);
+        const side = Math.random()<0.5?-1:1;
+        const dist = 9+Math.random()*22;
+        g.position.x = curveX(g.position.z)+side*dist;
+      }
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
 </body>
 </html>
