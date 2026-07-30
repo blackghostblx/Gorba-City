@@ -1,278 +1,707 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Survival City — پروتوتایپ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Gorba City - GTA Style</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#f5c98a">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#1a1a2e">
 <style>
-  html,body{margin:0;padding:0;overflow:hidden;background:#1a1a1a;font-family:Tahoma,Arial,sans-serif;}
-  canvas{display:block;touch-action:none;}
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; height:100%; overflow:hidden;
+    background:#0a0a0f;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    touch-action:none;
+    position:fixed;
+  }
 
-  #ui{position:fixed;top:14px;left:14px;color:#fff;z-index:10;user-select:none;}
-  .bar-label{font-size:12px;text-shadow:0 1px 3px #000;margin-bottom:2px;letter-spacing:.5px}
-  .bar{width:140px;height:10px;background:rgba(0,0,0,0.45);border-radius:5px;margin:2px 0 10px 0;overflow:hidden;border:1px solid rgba(255,255,255,0.25)}
-  .bar-fill{height:100%;transition:width .2s}
+  /* ===== LOADING SCREEN ===== */
+  #loader {
+    position:fixed; inset:0; z-index:999;
+    background: linear-gradient(145deg, #0a0a0f 0%, #1a1a2e 100%);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    color:#fff;
+    transition: opacity 0.8s ease;
+  }
+  #loader.hidden { opacity:0; pointer-events:none; }
+  #loader h1 {
+    font-size:clamp(28px, 6vw, 52px);
+    font-weight:900;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-shadow: 0 0 60px rgba(247,147,30,0.3);
+    letter-spacing:2px;
+    margin-bottom:8px;
+  }
+  #loader .sub {
+    font-size:clamp(12px, 2vw, 18px);
+    color:#8888aa;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    margin-bottom:40px;
+  }
+  .loader-bar-wrap {
+    width:min(320px, 70%);
+    height:6px;
+    background:rgba(255,255,255,0.08);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  }
+  .loader-bar-fill {
+    width:0%; height:100%;
+    background: linear-gradient(90deg, #ff6b35, #f7931e);
+    border-radius:10px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 20px rgba(247,147,30,0.4);
+  }
+  #loaderPercent {
+    margin-top:16px;
+    font-size:14px;
+    color:#666688;
+    font-weight:300;
+    letter-spacing:1px;
+  }
 
-  #crosshair{position:fixed;top:50%;left:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:rgba(255,255,255,0.85);z-index:9;pointer-events:none;box-shadow:0 0 3px #000}
+  /* ===== HUD ===== */
+  #hud {
+    position:fixed; top:0; left:0; right:0;
+    padding:12px 16px;
+    z-index:10;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    pointer-events:none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+  }
+  .hud-left { display:flex; flex-direction:column; gap:4px; }
+  .hud-item {
+    display:flex; align-items:center;
+    gap:10px; color:#fff;
+    font-size:clamp(11px, 1.6vw, 14px);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    font-weight:600;
+    letter-spacing:0.5px;
+  }
+  .hud-item .icon { font-size:18px; }
+  .bar-wrap {
+    width:clamp(80px, 20vw, 150px);
+    height:6px;
+    background:rgba(0,0,0,0.5);
+    border-radius:10px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .bar-fill {
+    height:100%;
+    border-radius:10px;
+    transition: width 0.4s ease;
+  }
+  .bar-fill.health { background: linear-gradient(90deg, #ff1744, #ff5252); }
+  .bar-fill.hunger { background: linear-gradient(90deg, #ff9100, #ffab40); }
 
-  #lookArea{position:fixed;top:0;right:0;width:62%;height:100%;z-index:5;}
+  .hud-right {
+    text-align:right;
+    color:#fff;
+    font-size:clamp(10px, 1.4vw, 13px);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    opacity:0.8;
+    font-weight:300;
+    letter-spacing:1px;
+  }
+  .hud-right .time { font-size:clamp(16px, 2.4vw, 24px); font-weight:700; color:#fff; }
 
-  #joystick{position:fixed;bottom:36px;left:36px;width:120px;height:120px;border-radius:50%;
-    background:rgba(255,255,255,0.10);border:2px solid rgba(255,255,255,0.35);z-index:10;}
-  #joyKnob{position:absolute;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.55);
-    top:34px;left:34px;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+  /* ===== CROSSHAIR ===== */
+  #crosshair {
+    position:fixed; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    z-index:8; pointer-events:none;
+    opacity:0.5;
+  }
+  #crosshair::before, #crosshair::after {
+    content:''; position:absolute;
+    background:rgba(255,255,255,0.6);
+  }
+  #crosshair::before {
+    width:2px; height:20px;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+  }
+  #crosshair::after {
+    width:20px; height:2px;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+  }
+  #crosshair .dot {
+    position:absolute;
+    top:50%; left:50%;
+    width:4px; height:4px;
+    background:rgba(255,50,50,0.8);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+  }
 
-  #jumpBtn{position:fixed;bottom:46px;right:34px;width:78px;height:78px;border-radius:50%;
-    background:rgba(255,140,0,0.35);border:2px solid rgba(255,180,80,0.6);color:#fff;
-    font-size:13px;z-index:10;display:flex;align-items:center;justify-content:center;user-select:none;}
+  /* ===== CONTROLS ===== */
+  #lookArea {
+    position:fixed; top:0; right:0;
+    width:65%; height:100%;
+    z-index:5;
+    touch-action:none;
+  }
 
-  #hint{position:fixed;bottom:150px;width:100%;text-align:center;color:#fff;font-size:12px;
-    text-shadow:0 1px 3px #000;opacity:.85;z-index:10;pointer-events:none;}
+  #joystickArea {
+    position:fixed; bottom:clamp(20px, 5vh, 50px); left:clamp(20px, 5vw, 50px);
+    width:clamp(110px, 20vw, 150px);
+    height:clamp(110px, 20vw, 150px);
+    border-radius:50%;
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(255,255,255,0.15);
+    z-index:10;
+    touch-action:none;
+    backdrop-filter:blur(4px);
+    box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.02);
+  }
+  #joyKnob {
+    position:absolute;
+    width:clamp(44px, 8vw, 60px);
+    height:clamp(44px, 8vw, 60px);
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 -2px 10px rgba(0,0,0,0.3);
+    border:1px solid rgba(255,255,255,0.2);
+    transition: none;
+  }
+  #joyKnob.active {
+    background:radial-gradient(circle, rgba(255,200,100,0.5), rgba(255,150,50,0.2));
+    border-color:rgba(255,200,100,0.4);
+  }
 
-  #loading{position:fixed;inset:0;background:#0a0a0a;color:#fff;display:flex;align-items:center;
-    justify-content:center;font-size:16px;z-index:100;}
+  #jumpBtn {
+    position:fixed; bottom:clamp(30px, 6vh, 60px); right:clamp(20px, 5vw, 40px);
+    width:clamp(64px, 12vw, 80px);
+    height:clamp(64px, 12vw, 80px);
+    border-radius:50%;
+    background:rgba(255,100,50,0.2);
+    border:2px solid rgba(255,150,80,0.3);
+    color:#fff;
+    font-size:clamp(11px, 1.8vw, 16px);
+    font-weight:700;
+    z-index:10;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+    touch-action:none;
+    backdrop-filter:blur(4px);
+    box-shadow: 0 0 30px rgba(255,100,50,0.1);
+    letter-spacing:1px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  #jumpBtn:active { transform:scale(0.92); background:rgba(255,100,50,0.4); }
+
+  #sprintBtn {
+    position:fixed; bottom:clamp(30px, 6vh, 60px);
+    right:clamp(100px, 20vw, 140px);
+    width:clamp(50px, 9vw, 60px);
+    height:clamp(50px, 9vw, 60px);
+    border-radius:50%;
+    background:rgba(50,150,255,0.15);
+    border:2px solid rgba(50,150,255,0.2);
+    color:#fff;
+    font-size:clamp(16px, 2.4vw, 22px);
+    z-index:10;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+    touch-action:none;
+    backdrop-filter:blur(4px);
+  }
+  #sprintBtn:active { background:rgba(50,150,255,0.3); transform:scale(0.92); }
+
+  /* ===== MINIMAP ===== */
+  #minimap {
+    position:fixed; top:70px; right:12px;
+    width:clamp(80px, 15vw, 120px);
+    height:clamp(80px, 15vw, 120px);
+    border-radius:50%;
+    background:rgba(0,0,0,0.5);
+    border:2px solid rgba(255,255,255,0.1);
+    z-index:9;
+    overflow:hidden;
+    backdrop-filter:blur(4px);
+    display:none;
+  }
 </style>
 </head>
 <body>
 
-<div id="loading">در حال ساخت دنیا...</div>
-
-<div id="ui">
-  <div class="bar-label">❤ سلامتی</div>
-  <div class="bar"><div class="bar-fill" id="healthBar" style="width:100%;background:#e33a3a;"></div></div>
-  <div class="bar-label">🍖 گرسنگی</div>
-  <div class="bar"><div class="bar-fill" id="hungerBar" style="width:100%;background:#e9a83a;"></div></div>
+<!-- ===== LOADING ===== -->
+<div id="loader">
+  <h1>GORBA CITY</h1>
+  <div class="sub">Open World</div>
+  <div class="loader-bar-wrap">
+    <div class="loader-bar-fill" id="loaderFill"></div>
+  </div>
+  <div id="loaderPercent">0%</div>
 </div>
 
-<div id="crosshair"></div>
-<div id="hint">👆 سمت راست صفحه رو بکش برای نگاه کردن، جوی‌استیک برای حرکت</div>
+<!-- ===== HUD ===== -->
+<div id="hud" style="display:none;">
+  <div class="hud-left">
+    <div class="hud-item">
+      <span class="icon">❤️</span>
+      <div class="bar-wrap"><div class="bar-fill health" id="healthBar" style="width:100%"></div></div>
+    </div>
+    <div class="hud-item">
+      <span class="icon">🍖</span>
+      <div class="bar-wrap"><div class="bar-fill hunger" id="hungerBar" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div class="hud-right">
+    <div class="time" id="gameTime">12:00</div>
+    <div id="locationName">Los Santos</div>
+  </div>
+</div>
 
+<!-- ===== CROSSHAIR ===== -->
+<div id="crosshair"><div class="dot"></div></div>
+
+<!-- ===== CONTROLS ===== -->
 <div id="lookArea"></div>
-<div id="joystick"><div id="joyKnob"></div></div>
+<div id="joystickArea"><div id="joyKnob"></div></div>
 <div id="jumpBtn">پرش</div>
+<div id="sprintBtn">🏃</div>
+
+<!-- ===== MINIMAP ===== -->
+<div id="minimap"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ---------- Basic scene setup ----------
-const scene = new THREE.Scene();
-const skyColor = 0xf5c98a; // warm sunset-ish sky, GTA SA vibe
-scene.background = new THREE.Color(skyColor);
-scene.fog = new THREE.Fog(skyColor, 15, 90);
+// ============================================
+// LOADING SYSTEM
+// ============================================
+let loadProgress = 0;
+const loaderFill = document.getElementById('loaderFill');
+const loaderPercent = document.getElementById('loaderPercent');
+const loader = document.getElementById('loader');
+const hud = document.getElementById('hud');
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+function updateLoader(val) {
+  loadProgress = Math.min(val, 100);
+  loaderFill.style.width = loadProgress + '%';
+  loaderPercent.textContent = Math.floor(loadProgress) + '%';
+}
+
+// ============================================
+// SCENE SETUP
+// ============================================
+updateLoader(10);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+scene.fog = new THREE.Fog(0x87CEEB, 50, 120);
+
+updateLoader(20);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 200);
 camera.rotation.order = 'YXZ';
 
-const renderer = new THREE.WebGLRenderer({ antialias:true });
+updateLoader(30);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
 document.body.appendChild(renderer.domElement);
 
-window.addEventListener('resize', ()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+updateLoader(40);
+// ============================================
+// LIGHTING - GTA Style
+// ============================================
+const ambient = new THREE.AmbientLight(0x404060, 0.4);
+scene.add(ambient);
 
-// ---------- Lighting (warm "GTA SA sunny" look) ----------
-const hemi = new THREE.HemisphereLight(0xffe9c4, 0x8a6a4a, 0.9);
+const hemi = new THREE.HemisphereLight(0xffeedd, 0x080820, 0.8);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff0d0, 1.1);
-sun.position.set(40, 60, -20);
+
+const sun = new THREE.DirectionalLight(0xffeedd, 1.8);
+sun.position.set(50, 80, -30);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024,1024);
-sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
-sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.near = 0.5;
+sun.shadow.camera.far = 150;
+sun.shadow.camera.left = -60;
+sun.shadow.camera.right = 60;
+sun.shadow.camera.top = 60;
+sun.shadow.camera.bottom = -60;
+sun.shadow.bias = -0.001;
 scene.add(sun);
 
-// ---------- Voxel-ish terrain ----------
-const GRID = 32;           // grid is GRID x GRID cells
-const CELL = 1;            // size of each block
+const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+fill.position.set(-30, 20, 40);
+scene.add(fill);
+
+updateLoader(50);
+// ============================================
+// TERRAIN - Smooth GTA Style Hills
+// ============================================
+const GRID = 40;
 const heights = [];
-function heightAt(gx, gz){
+const center = GRID/2;
+
+function smoothHeight(x, z) {
+  const dx = x - center, dz = z - center;
+  const dist = Math.hypot(dx, dz);
+  let h = 0;
+  // Flat center (city)
+  if (dist < 8) h = 0;
+  else if (dist < 12) h = (dist - 8) * 0.3;
+  else {
+    h = 1.2 + Math.sin(x * 0.08) * 1.5 + Math.cos(z * 0.06) * 1.2;
+    h += Math.sin(x * 0.15 + z * 0.1) * 0.8;
+    h = Math.max(0, h - (dist - 12) * 0.03);
+  }
+  return Math.max(0, h);
+}
+
+for (let x = 0; x < GRID; x++) {
+  heights[x] = [];
+  for (let z = 0; z < GRID; z++) {
+    heights[x][z] = smoothHeight(x, z);
+  }
+}
+
+function heightAt(gx, gz) {
   gx = Math.max(0, Math.min(GRID-1, gx));
   gz = Math.max(0, Math.min(GRID-1, gz));
   return heights[gx][gz];
 }
-const center = GRID/2;
-for(let x=0;x<GRID;x++){
-  heights.push([]);
-  for(let z=0;z<GRID;z++){
-    const d = Math.hypot(x-center, z-center);
-    let h;
-    if(d < 7){ h = 1; } // flat town square
-    else{
-      h = Math.max(0, Math.round(2 + 2*Math.sin(x*0.35) + 2*Math.cos(z*0.3) - d*0.05));
-    }
-    heights[x].push(h);
-  }
+
+updateLoader(60);
+// ============================================
+// GROUND - With GTA Style Colors
+// ============================================
+const groundGroup = new THREE.Group();
+const grassColors = [0x5a8c4a, 0x6a9c5a, 0x4a7c3a, 0x7aaa6a];
+const dirtColor = 0x8a7a5a;
+const rockColor = 0x8a8a86;
+
+function getGroundColor(h, x, z) {
+  const dx = x - center, dz = z - center;
+  const dist = Math.hypot(dx, dz);
+  if (dist < 7) return dirtColor;
+  if (dist < 8.5) return 0x9a8a6a;
+  if (h < 0.5) return grassColors[0];
+  if (h < 1.5) return grassColors[1];
+  if (h < 3) return grassColors[2];
+  return rockColor;
 }
 
-const boxGeo = new THREE.BoxGeometry(CELL, 1, CELL);
-function colorForHeight(h){
-  if(h<=1) return 0xd8c08a;      // sand / dirt road (town square)
-  if(h<=2) return 0x6fae4e;      // grass
-  if(h<=4) return 0x4c8b3d;      // hill grass
-  return 0x8a8a86;               // rock
-}
-
-const blockGroup = new THREE.Group();
-for(let x=0;x<GRID;x++){
-  for(let z=0;z<GRID;z++){
+const geoGround = new THREE.PlaneGeometry(1, 1);
+for (let x = 0; x < GRID; x++) {
+  for (let z = 0; z < GRID; z++) {
     const h = heights[x][z];
-    const stacks = Math.max(1,h);
-    for(let y=0;y<stacks;y++){
-      const mat = new THREE.MeshLambertMaterial({ color: colorForHeight(y+1) });
-      const cube = new THREE.Mesh(boxGeo, mat);
-      cube.position.set(x-center, y+0.5, z-center);
-      cube.receiveShadow = true;
-      cube.castShadow = true;
-      blockGroup.add(cube);
+    const mat = new THREE.MeshStandardMaterial({
+      color: getGroundColor(h, x, z),
+      roughness: 0.9,
+      metalness: 0.0,
+      flatShading: false,
+    });
+    const tile = new THREE.Mesh(geoGround, mat);
+    tile.rotation.x = -Math.PI/2;
+    tile.position.set(x - center, h, z - center);
+    tile.receiveShadow = true;
+    groundGroup.add(tile);
+  }
+}
+scene.add(groundGroup);
+
+updateLoader(70);
+// ============================================
+// BUILDINGS - GTA Style
+// ============================================
+function makeBuilding(x, z, w, h, d, color, roofColor, windows = true) {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.1 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
+  body.position.y = h/2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  g.add(body);
+
+  // Roof
+  const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.8 });
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.2, d * 1.02), roofMat);
+  roof.position.y = h + 0.1;
+  roof.receiveShadow = true;
+  g.add(roof);
+
+  // Windows (simple boxes)
+  if (windows) {
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x224466, emissiveIntensity: 0.2 });
+    for (let wy = 1; wy < h - 0.5; wy += 1.2) {
+      for (let wx = -w/2 + 0.4; wx < w/2 - 0.3; wx += 0.9) {
+        const win = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.05), winMat);
+        win.position.set(wx, wy, d/2 + 0.01);
+        g.add(win);
+        const win2 = win.clone();
+        win2.position.z = -d/2 - 0.01;
+        g.add(win2);
+      }
     }
   }
-}
-scene.add(blockGroup);
 
-// ---------- A few GTA-SA-ish buildings in the town square ----------
-function makeBuilding(x,z,w,h,d,color, roofColor){
+  g.position.set(x, 0, z);
+  scene.add(g);
+  return g;
+}
+
+// City buildings
+const bldData = [
+  {x:-7,z:-7,w:6,h:8,d:5,c:0xccbb99,r:0x664433},
+  {x:7,z:-7,w:5,h:12,d:4,c:0xbbaa88,r:0x554433},
+  {x:-7,z:7,w:7,h:6,d:4,c:0xddccaa,r:0x665544},
+  {x:7,z:7,w:5,h:15,d:5,c:0xaa9977,r:0x443322},
+  {x:-4,z:-10,w:4,h:5,d:4,c:0xccaa88,r:0x554433},
+  {x:4,z:-10,w:3,h:7,d:3,c:0xbb9977,r:0x443322},
+  {x:-10,z:-4,w:4,h:6,d:5,c:0xddbb99,r:0x554433},
+  {x:10,z:-4,w:5,h:10,d:4,c:0xccaa88,r:0x443322},
+  {x:-10,z:4,w:3,h:4,d:4,c:0xbb9977,r:0x554433},
+  {x:10,z:4,w:4,h:8,d:5,c:0xaa8866,r:0x443322},
+];
+bldData.forEach(d => makeBuilding(d.x, d.z, d.w, d.h, d.d, d.c, d.r));
+
+updateLoader(80);
+// ============================================
+// CARS - GTA Style
+// ============================================
+function makeCar(x, z, color, rotY, model = 'sedan') {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color}));
-  body.position.y = h/2 + 1;
-  body.castShadow = true; body.receiveShadow = true;
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.7 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.0, transparent: true, opacity: 0.5 });
+  const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+
+  // Body
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.5, 1.2), bodyMat);
+  body.position.y = 0.35;
+  body.castShadow = true;
   g.add(body);
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(w*1.05,0.4,d*1.05), new THREE.MeshLambertMaterial({color:roofColor}));
-  roof.position.y = h + 1.2;
-  g.add(roof);
-  g.position.set(x,0,z);
-  scene.add(g);
-}
-makeBuilding(-6,-6, 5,7,5, 0xdcb98a, 0x8a3d2b);
-makeBuilding( 6,-6, 4,10,4, 0xc9a876, 0x5b3a2b);
-makeBuilding(-6, 6, 6,5,4, 0xe0c9a0, 0x7a4a2b);
-makeBuilding( 6, 6, 4,13,4, 0xb99b6e, 0x4a2f22);
 
-// ---------- Simple parked cars (GTA nod) ----------
-function makeCar(x,z,color, rotY){
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(2,0.6,1), new THREE.MeshLambertMaterial({color}));
-  body.position.y = 1.3;
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1,0.5,0.9), new THREE.MeshLambertMaterial({color:0x223344}));
-  cabin.position.set(0,1.7,0);
-  g.add(body,cabin);
+  // Cabin
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 1.0), glassMat);
+  cabin.position.set(0, 0.8, 0);
+  g.add(cabin);
+
+  // Wheels
+  for (let side of [-0.7, 0.7]) {
+    for (let front of [-0.7, 0.7]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 8), wheelMat);
+      wheel.rotation.x = Math.PI/2;
+      wheel.position.set(front, 0.15, side);
+      g.add(wheel);
+    }
+  }
+
   g.rotation.y = rotY;
-  g.position.set(x,0,z);
+  g.position.set(x, 0, z);
   scene.add(g);
+  return g;
 }
-makeCar(-2,-2,0xb32020,0.3);
-makeCar(2,-1,0x2050b3,-0.5);
 
-// ---------- Palm trees scattered outside the square ----------
-function makePalm(x,z){
+makeCar(-3, -3, 0xcc2222, 0.2);
+makeCar(3, -2, 0x2255cc, -0.3);
+makeCar(-2, 3, 0x22cc44, 0.8);
+makeCar(4, 4, 0xcccc22, -0.5);
+
+updateLoader(85);
+// ============================================
+// TREES - GTA Style (more realistic)
+// ============================================
+function makeTree(x, z) {
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.18,3,6), new THREE.MeshLambertMaterial({color:0x7a5230}));
-  trunk.position.y = heightAt(Math.round(x+center),Math.round(z+center)) + 1.5;
-  const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.1,6,6), new THREE.MeshLambertMaterial({color:0x2e7d32}));
-  leaves.position.y = trunk.position.y + 1.6;
-  leaves.scale.set(1,0.6,1);
-  g.add(trunk,leaves);
-  g.position.set(x,0,z);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6a4a3a, roughness: 0.9 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x3a7a2a, roughness: 0.8 });
+
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 2.5, 6), trunkMat);
+  const h = heightAt(Math.round(x + center), Math.round(z + center));
+  trunk.position.y = h + 1.25;
+  trunk.castShadow = true;
+  g.add(trunk);
+
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(1.0, 6, 6), leafMat);
+  crown.position.set(0, h + 3.2, 0);
+  crown.scale.set(1, 0.7, 1);
+  crown.castShadow = true;
+  g.add(crown);
+
+  const crown2 = crown.clone();
+  crown2.position.set(0.6, h + 2.8, 0.5);
+  crown2.scale.set(0.7, 0.6, 0.7);
+  g.add(crown2);
+
+  g.position.set(x, 0, z);
   scene.add(g);
 }
-for(let i=0;i<14;i++){
-  const gx = Math.floor(Math.random()*GRID), gz = Math.floor(Math.random()*GRID);
-  const d = Math.hypot(gx-center, gz-center);
-  if(d>9 && d<15){
-    makePalm(gx-center, gz-center);
+
+for (let i = 0; i < 30; i++) {
+  const gx = Math.floor(Math.random() * GRID);
+  const gz = Math.floor(Math.random() * GRID);
+  const dx = gx - center, dz = gz - center;
+  const dist = Math.hypot(dx, dz);
+  if (dist > 9 && dist < 17) {
+    makeTree(gx - center, gz - center);
   }
 }
 
-// ---------- Player state ----------
+updateLoader(90);
+// ============================================
+// PLAYER
+// ============================================
 const player = {
   x: 0, z: 0,
-  feetY: heightAt(Math.round(center),Math.round(center)),
+  feetY: heightAt(Math.round(center), Math.round(center)),
   velY: 0,
   yaw: 0,
   pitch: 0,
-  onGround: true
+  onGround: true,
+  sprinting: false
 };
 const EYE_HEIGHT = 1.6;
-const GRAVITY = 18;
-const JUMP_SPEED = 6.5;
-const MOVE_SPEED = 4.2;
+const GRAVITY = 20;
+const JUMP_SPEED = 7;
+const MOVE_SPEED = 5;
+const SPRINT_SPEED = 8.5;
 
-// ---------- Touch / mouse look (drag on right side of screen) ----------
+// ============================================
+// CONTROLS
+// ============================================
 const lookArea = document.getElementById('lookArea');
-let looking = false, lastX=0, lastY=0;
-lookArea.addEventListener('pointerdown', e=>{ looking=true; lastX=e.clientX; lastY=e.clientY; lookArea.setPointerCapture(e.pointerId); });
-lookArea.addEventListener('pointerup', e=>{ looking=false; });
-lookArea.addEventListener('pointermove', e=>{
-  if(!looking) return;
-  const dx = e.clientX-lastX, dy = e.clientY-lastY;
-  lastX=e.clientX; lastY=e.clientY;
-  player.yaw   -= dx*0.0035;
-  player.pitch -= dy*0.0035;
-  player.pitch = Math.max(-1.4, Math.min(1.4, player.pitch));
+let looking = false, lastX = 0, lastY = 0;
+
+lookArea.addEventListener('pointerdown', (e) => {
+  looking = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  lookArea.setPointerCapture(e.pointerId);
+});
+lookArea.addEventListener('pointerup', () => { looking = false; });
+lookArea.addEventListener('pointermove', (e) => {
+  if (!looking) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  player.yaw -= dx * 0.004;
+  player.pitch -= dy * 0.004;
+  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
 });
 
-// ---------- Joystick ----------
-const joystick = document.getElementById('joystick');
+// Joystick
+const joystickArea = document.getElementById('joystickArea');
 const joyKnob = document.getElementById('joyKnob');
-let joyActive=false, joyCenter={x:0,y:0}, joyVec={x:0,y:0};
-function joyRect(){ return joystick.getBoundingClientRect(); }
-joystick.addEventListener('pointerdown', e=>{
-  joyActive=true;
-  const r = joyRect();
-  joyCenter = { x:r.left+r.width/2, y:r.top+r.height/2 };
-  joystick.setPointerCapture(e.pointerId);
-});
-joystick.addEventListener('pointerup', ()=>{
-  joyActive=false; joyVec={x:0,y:0};
-  joyKnob.style.top='34px'; joyKnob.style.left='34px';
-});
-joystick.addEventListener('pointermove', e=>{
-  if(!joyActive) return;
-  let dx = e.clientX-joyCenter.x, dy = e.clientY-joyCenter.y;
-  const max = 40;
-  const len = Math.hypot(dx,dy);
-  if(len>max){ dx = dx/len*max; dy = dy/len*max; }
-  joyKnob.style.left = (34+dx)+'px';
-  joyKnob.style.top  = (34+dy)+'px';
-  joyVec = { x: dx/max, y: dy/max };
+let joyActive = false, joyCenter = { x: 0, y: 0 }, joyVec = { x: 0, y: 0 };
+const JOY_MAX = 40;
+
+function getJoyRect() { return joystickArea.getBoundingClientRect(); }
+
+joystickArea.addEventListener('pointerdown', (e) => {
+  joyActive = true;
+  const r = getJoyRect();
+  joyCenter = { x: r.left + r.width/2, y: r.top + r.height/2 };
+  joystickArea.setPointerCapture(e.pointerId);
+  joyKnob.classList.add('active');
 });
 
-// ---------- Jump button ----------
-document.getElementById('jumpBtn').addEventListener('pointerdown', ()=>{
-  if(player.onGround){ player.velY = JUMP_SPEED; player.onGround=false; }
+joystickArea.addEventListener('pointerup', () => {
+  joyActive = false;
+  joyVec = { x: 0, y: 0 };
+  joyKnob.style.transform = 'translate(-50%,-50%)';
+  joyKnob.classList.remove('active');
 });
 
-// ---------- Main loop ----------
+joystickArea.addEventListener('pointermove', (e) => {
+  if (!joyActive) return;
+  let dx = e.clientX - joyCenter.x;
+  let dy = e.clientY - joyCenter.y;
+  const len = Math.hypot(dx, dy);
+  if (len > JOY_MAX) { dx = dx/len * JOY_MAX; dy = dy/len * JOY_MAX; }
+  joyKnob.style.transform = `translate(${-50 + (dx/JOY_MAX)*50}%, ${-50 + (dy/JOY_MAX)*50}%)`;
+  joyVec = { x: dx/JOY_MAX, y: dy/JOY_MAX };
+});
+
+// Jump
+document.getElementById('jumpBtn').addEventListener('pointerdown', () => {
+  if (player.onGround) {
+    player.velY = JUMP_SPEED;
+    player.onGround = false;
+  }
+});
+
+// Sprint
+let sprinting = false;
+document.getElementById('sprintBtn').addEventListener('pointerdown', () => {
+  sprinting = !sprinting;
+  document.getElementById('sprintBtn').style.background = sprinting ? 'rgba(50,150,255,0.4)' : 'rgba(50,150,255,0.15)';
+});
+
+updateLoader(95);
+// ============================================
+// RESIZE
+// ============================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================
+// GAME LOOP
+// ============================================
 const clock = new THREE.Clock();
-document.getElementById('loading').style.display='none';
+let gameTime = 720; // 12:00 in minutes
+let frameCount = 0;
 
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());
+  frameCount++;
 
-  // horizontal movement relative to camera yaw
-  const forward = new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0), player.yaw);
-  const right   = new THREE.Vector3(1,0,0).applyAxisAngle(new THREE.Vector3(0,1,0), player.yaw);
-  const moveX = joyVec.x, moveZ = -joyVec.y; // up on joystick = forward
-  const mvx = (forward.x*moveZ + right.x*moveX) * MOVE_SPEED * dt;
-  const mvz = (forward.z*moveZ + right.z*moveX) * MOVE_SPEED * dt;
+  // Update time
+  if (frameCount % 30 === 0) {
+    gameTime = (gameTime + 0.5) % 1440;
+    const hours = Math.floor(gameTime / 60);
+    const mins = Math.floor(gameTime % 60);
+    document.getElementById('gameTime').textContent =
+      `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+  }
+
+  // Movement
+  const speed = sprinting ? SPRINT_SPEED : MOVE_SPEED;
+  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+  const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
+  const moveX = joyVec.x;
+  const moveZ = -joyVec.y;
+  const mvx = (forward.x * moveZ + right.x * moveX) * speed * dt;
+  const mvz = (forward.z * moveZ + right.z * moveX) * speed * dt;
   player.x += mvx;
   player.z += mvz;
   const half = center - 0.5;
   player.x = Math.max(-half, Math.min(half, player.x));
   player.z = Math.max(-half, Math.min(half, player.z));
 
-  // vertical / gravity
-  const groundY = heightAt(Math.round(player.x+center), Math.round(player.z+center));
-  player.velY -= GRAVITY*dt;
-  const nextFeetY = player.feetY + player.velY*dt;
-  if(nextFeetY <= groundY){
+  // Gravity
+  const groundY = heightAt(Math.round(player.x + center), Math.round(player.z + center));
+  player.velY -= GRAVITY * dt;
+  const nextFeetY = player.feetY + player.velY * dt;
+  if (nextFeetY <= groundY) {
     player.feetY = groundY;
     player.velY = 0;
     player.onGround = true;
@@ -281,17 +710,31 @@ function animate(){
     player.onGround = false;
   }
 
-  camera.position.set(player.x, player.feetY+EYE_HEIGHT, player.z);
+  camera.position.set(player.x, player.feetY + EYE_HEIGHT, player.z);
   camera.rotation.y = player.yaw;
   camera.rotation.x = player.pitch;
 
   renderer.render(scene, camera);
 }
-animate();
 
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+// ============================================
+// START
+// ============================================
+updateLoader(100);
+
+setTimeout(() => {
+  loader.classList.add('hidden');
+  hud.style.display = 'flex';
+  document.getElementById('locationName').textContent = 'Gorba City';
+  animate();
+}, 600);
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+console.log('🏙️ Gorba City loaded!');
 </script>
 </body>
 </html>
