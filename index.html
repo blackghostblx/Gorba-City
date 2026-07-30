@@ -3,798 +3,209 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Gorba City - Open World</title>
+<title>Gorba City</title>
 <meta name="theme-color" content="#0a0a1a">
-
-<!-- ===== FORCE LANDSCAPE ===== -->
 <style>
-  /* Force landscape on mobile */
-  @media screen and (orientation: portrait) {
-    html, body {
-      transform: rotate(90deg);
-      transform-origin: center center;
-      width: 100vh;
-      height: 100vw;
-      overflow: hidden;
-      position: fixed;
-      top: 0;
-      left: 0;
-    }
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body {
-    width:100%; height:100%; overflow:hidden;
-    background:#0a0a1a;
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    touch-action:none;
-    position:fixed;
-    top:0; left:0;
-  }
-
-  /* ===== LOADING ===== */
-  #loader {
-    position:fixed; inset:0; z-index:999;
-    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 100%);
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    color:#fff;
-    transition: opacity 0.8s ease;
-  }
-  #loader.hidden { opacity:0; pointer-events:none; }
-  #loader h1 {
-    font-size:clamp(28px, 5vw, 52px);
-    font-weight:900;
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    margin-bottom:4px;
-  }
-  #loader .sub {
-    font-size:clamp(10px, 1.5vw, 16px);
-    color:#6666aa;
-    letter-spacing:6px;
-    text-transform:uppercase;
-    margin-bottom:30px;
-  }
-  .loader-bar-wrap {
-    width:min(300px, 50%);
-    height:4px;
-    background:rgba(255,255,255,0.06);
-    border-radius:10px;
-    overflow:hidden;
-  }
-  .loader-bar-fill {
-    width:0%; height:100%;
-    background: linear-gradient(90deg, #ff6b35, #f7931e);
-    border-radius:10px;
-    transition: width 0.2s ease;
-  }
-  #loaderPercent {
-    margin-top:12px;
-    font-size:12px;
-    color:#444466;
-    letter-spacing:1px;
-  }
-  #loaderTips {
-    margin-top:20px;
-    font-size:11px;
-    color:#555577;
-    text-align:center;
-    max-width:280px;
-    line-height:1.6;
-    min-height:40px;
-  }
-
-  /* ===== HUD ===== */
-  #hud {
-    position:fixed; top:0; left:0; right:0;
-    padding:8px 14px;
-    z-index:20;
-    display:none;
-    justify-content:space-between;
-    align-items:flex-start;
-    pointer-events:none;
-    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
-  }
-  .hud-left { display:flex; flex-direction:column; gap:2px; }
-  .hud-item {
-    display:flex; align-items:center;
-    gap:6px; color:#fff;
-    font-size:clamp(9px, 1.2vw, 12px);
-    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-    font-weight:600;
-  }
-  .hud-item .icon { font-size:12px; }
-  .bar-wrap {
-    width:clamp(50px, 12vw, 100px);
-    height:4px;
-    background:rgba(0,0,0,0.6);
-    border-radius:10px;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,0.05);
-  }
-  .bar-fill { height:100%; border-radius:10px; transition: width 0.3s ease; }
-  .bar-fill.health { background: linear-gradient(90deg, #ff1744, #ff5252); }
-  .bar-fill.hunger { background: linear-gradient(90deg, #ff9100, #ffab40); }
-  .bar-fill.thirst { background: linear-gradient(90deg, #2979ff, #40c4ff); }
-
-  .hud-right {
-    text-align:right;
-    color:#fff;
-    font-size:clamp(8px, 1vw, 11px);
-    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-    opacity:0.7;
-    font-weight:300;
-    letter-spacing:0.5px;
-  }
-  .hud-right .time { font-size:clamp(12px, 1.8vw, 18px); font-weight:700; color:#fff; opacity:1; }
-
-  /* ===== CROSSHAIR ===== */
-  #crosshair {
-    position:fixed; top:50%; left:50%;
-    transform:translate(-50%,-50%);
-    z-index:8; pointer-events:none;
-    opacity:0.4;
-  }
-  #crosshair::before, #crosshair::after {
-    content:''; position:absolute;
-    background:rgba(255,255,255,0.5);
-  }
-  #crosshair::before { width:1px; height:14px; top:50%; left:50%; transform:translate(-50%,-50%); }
-  #crosshair::after { width:14px; height:1px; top:50%; left:50%; transform:translate(-50%,-50%); }
-  #crosshair .dot {
-    position:absolute; top:50%; left:50%;
-    width:3px; height:3px;
-    background:rgba(255,50,50,0.7);
-    border-radius:50%;
-    transform:translate(-50%,-50%);
-  }
-
-  /* ===== CONTROLS ===== */
-  #lookArea {
-    position:fixed; top:0; right:0;
-    width:55%; height:100%;
-    z-index:5;
-    touch-action:none;
-  }
-
-  #joystickArea {
-    position:fixed; bottom:clamp(14px, 3vh, 30px); left:clamp(12px, 2vw, 25px);
-    width:clamp(80px, 14vw, 110px);
-    height:clamp(80px, 14vw, 110px);
-    border-radius:50%;
-    background:rgba(255,255,255,0.04);
-    border:1.5px solid rgba(255,255,255,0.1);
-    z-index:10;
-    touch-action:none;
-    backdrop-filter:blur(6px);
-    box-shadow: 0 0 40px rgba(0,0,0,0.6);
-  }
-  #joyKnob {
-    position:absolute;
-    width:clamp(32px, 5.5vw, 44px);
-    height:clamp(32px, 5.5vw, 44px);
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
-    top:50%; left:50%;
-    transform:translate(-50%,-50%);
-    pointer-events:none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    border:1px solid rgba(255,255,255,0.1);
-    transition:none;
-  }
-
-  #actionBtns {
-    position:fixed; bottom:clamp(14px, 3vh, 30px); right:clamp(10px, 2vw, 25px);
-    z-index:10;
-    display:flex; flex-direction:column;
-    gap:8px;
-    align-items:center;
-  }
-  .action-btn {
-    width:clamp(46px, 8vw, 58px);
-    height:clamp(46px, 8vw, 58px);
-    border-radius:50%;
-    border:1.5px solid rgba(255,255,255,0.12);
-    color:#fff;
-    font-size:clamp(9px, 1.3vw, 12px);
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    user-select:none;
-    touch-action:none;
-    backdrop-filter:blur(6px);
-    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    transition: all 0.1s;
-  }
-  .action-btn:active { transform:scale(0.88); }
-  #jumpBtn { background:rgba(255,100,50,0.15); border-color:rgba(255,150,80,0.2); }
-  #jumpBtn:active { background:rgba(255,100,50,0.3); }
-  #sprintBtn { background:rgba(50,150,255,0.1); border-color:rgba(50,150,255,0.15); font-size:clamp(12px, 1.6vw, 18px); }
-  #sprintBtn:active { background:rgba(50,150,255,0.3); }
-  #sprintBtn.active { background:rgba(50,150,255,0.3); border-color:rgba(50,150,255,0.5); }
-
-  /* ===== INVENTORY BUTTON ===== */
-  #invBtn {
-    position:fixed; top:55px; right:10px;
-    width:clamp(36px, 5.5vw, 44px);
-    height:clamp(36px, 5.5vw, 44px);
-    border-radius:10px;
-    background:rgba(0,0,0,0.5);
-    border:1px solid rgba(255,255,255,0.08);
-    color:#fff;
-    font-size:clamp(16px, 2.5vw, 22px);
-    z-index:15;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    backdrop-filter:blur(8px);
-    touch-action:none;
-  }
-  #invBtn:active { transform:scale(0.9); background:rgba(255,255,255,0.1); }
-
-  /* ===== INVENTORY PANEL ===== */
-  #inventory {
-    position:fixed; inset:0; z-index:50;
-    background:rgba(0,0,0,0.92);
-    backdrop-filter:blur(20px);
-    display:none;
-    flex-direction:column;
-    padding:16px 14px;
-    color:#fff;
-  }
-  #inventory.open { display:flex; }
-  #invHeader {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding-bottom:12px;
-    border-bottom:1px solid rgba(255,255,255,0.06);
-    margin-bottom:12px;
-  }
-  #invHeader h2 {
-    font-size:clamp(16px, 2.5vw, 22px);
-    font-weight:300;
-    letter-spacing:2px;
-  }
-  #invHeader h2 span { color:#ff6b35; }
-  #invClose {
-    font-size:clamp(20px, 3vw, 28px);
-    background:none;
-    border:none;
-    color:#fff;
-    opacity:0.5;
-    padding:0 10px;
-    touch-action:none;
-  }
-  #invClose:active { opacity:1; transform:scale(0.9); }
-  #invGrid {
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:8px;
-    flex:1;
-    overflow-y:auto;
-    padding-bottom:8px;
-    align-content:start;
-  }
-  .inv-slot {
-    aspect-ratio:1;
-    background:rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.06);
-    border-radius:8px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    font-size:clamp(20px, 3vw, 30px);
-    color:#888;
-    transition: all 0.2s;
-    min-height:50px;
-    position:relative;
-  }
-  .inv-slot.has-item {
-    background:rgba(255,255,255,0.06);
-    border-color:rgba(255,255,255,0.1);
-  }
-  .inv-slot .count {
-    position:absolute;
-    bottom:2px; right:6px;
-    font-size:clamp(8px, 1vw, 11px);
-    color:#aaa;
-    font-weight:700;
-  }
-  .inv-slot .name {
-    font-size:clamp(6px, 0.8vw, 9px);
-    color:#666;
-    margin-top:2px;
-  }
-  #invStats {
-    padding:10px 0 0 0;
-    border-top:1px solid rgba(255,255,255,0.06);
-    display:flex;
-    justify-content:space-around;
-    font-size:clamp(10px, 1.2vw, 13px);
-    color:#888;
-  }
-  #invStats span { color:#fff; font-weight:600; }
-
-  /* ===== INTERACT ===== */
-  #interactHint {
-    position:fixed; bottom:50%; left:50%;
-    transform:translate(-50%, 50%);
-    z-index:7;
-    color:#fff;
-    background:rgba(0,0,0,0.6);
-    padding:6px 16px;
-    border-radius:20px;
-    font-size:clamp(10px, 1.2vw, 13px);
-    backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.05);
-    display:none;
-    pointer-events:none;
-    text-align:center;
-    max-width:80%;
-  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0a0a1a;font-family:'Segoe UI',Tahoma,sans-serif;touch-action:none;position:fixed;top:0;left:0}
+  @media screen and (orientation:portrait){html,body{transform:rotate(90deg);transform-origin:center center;width:100vh;height:100vw;overflow:hidden;position:fixed;top:0;left:0}}
+  #loader{position:fixed;inset:0;z-index:999;background:linear-gradient(180deg,#0a0a1a,#1a1a3e);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;transition:opacity .8s}
+  #loader.hidden{opacity:0;pointer-events:none}
+  #loader h1{font-size:clamp(28px,5vw,52px);font-weight:900;background:linear-gradient(135deg,#ff6b35,#f7931e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  #loader .sub{font-size:clamp(10px,1.5vw,16px);color:#6666aa;letter-spacing:6px;text-transform:uppercase;margin-bottom:30px}
+  .loader-bar-wrap{width:min(300px,50%);height:4px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden}
+  .loader-bar-fill{width:0%;height:100%;background:linear-gradient(90deg,#ff6b35,#f7931e);border-radius:10px;transition:width .2s}
+  #loaderPercent{margin-top:12px;font-size:12px;color:#444466;letter-spacing:1px}
+  #loaderTips{margin-top:20px;font-size:11px;color:#555577;text-align:center;max-width:280px;line-height:1.6;min-height:40px}
+  #hud{position:fixed;top:0;left:0;right:0;padding:8px 14px;z-index:20;display:none;justify-content:space-between;align-items:flex-start;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent)}
+  .hud-left{display:flex;flex-direction:column;gap:2px}
+  .hud-item{display:flex;align-items:center;gap:6px;color:#fff;font-size:clamp(9px,1.2vw,12px);text-shadow:0 2px 8px rgba(0,0,0,.9);font-weight:600}
+  .hud-item .icon{font-size:12px}
+  .bar-wrap{width:clamp(50px,12vw,100px);height:4px;background:rgba(0,0,0,.6);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.05)}
+  .bar-fill{height:100%;border-radius:10px;transition:width .3s}
+  .bar-fill.health{background:linear-gradient(90deg,#ff1744,#ff5252)}
+  .bar-fill.hunger{background:linear-gradient(90deg,#ff9100,#ffab40)}
+  .bar-fill.thirst{background:linear-gradient(90deg,#2979ff,#40c4ff)}
+  .hud-right{text-align:right;color:#fff;font-size:clamp(8px,1vw,11px);text-shadow:0 2px 8px rgba(0,0,0,.9);opacity:.7;font-weight:300;letter-spacing:.5px}
+  .hud-right .time{font-size:clamp(12px,1.8vw,18px);font-weight:700;color:#fff;opacity:1}
+  #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:8;pointer-events:none;opacity:.4}
+  #crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.5)}
+  #crosshair::before{width:1px;height:14px;top:50%;left:50%;transform:translate(-50%,-50%)}
+  #crosshair::after{width:14px;height:1px;top:50%;left:50%;transform:translate(-50%,-50%)}
+  #crosshair .dot{position:absolute;top:50%;left:50%;width:3px;height:3px;background:rgba(255,50,50,.7);border-radius:50%;transform:translate(-50%,-50%)}
+  #lookArea{position:fixed;top:0;right:0;width:55%;height:100%;z-index:5;touch-action:none}
+  #joystickArea{position:fixed;bottom:clamp(14px,3vh,30px);left:clamp(12px,2vw,25px);width:clamp(80px,14vw,110px);height:clamp(80px,14vw,110px);border-radius:50%;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);z-index:10;touch-action:none;backdrop-filter:blur(6px);box-shadow:0 0 40px rgba(0,0,0,.6)}
+  #joyKnob{position:absolute;width:clamp(32px,5.5vw,44px);height:clamp(32px,5.5vw,44px);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.3),rgba(255,255,255,.05));top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1)}
+  #actionBtns{position:fixed;bottom:clamp(14px,3vh,30px);right:clamp(10px,2vw,25px);z-index:10;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .action-btn{width:clamp(46px,8vw,58px);height:clamp(46px,8vw,58px);border-radius:50%;border:1.5px solid rgba(255,255,255,.12);color:#fff;font-size:clamp(9px,1.3vw,12px);font-weight:700;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none;backdrop-filter:blur(6px);text-shadow:0 2px 8px rgba(0,0,0,.5);transition:all .1s}
+  .action-btn:active{transform:scale(.88)}
+  #jumpBtn{background:rgba(255,100,50,.15);border-color:rgba(255,150,80,.2)}
+  #jumpBtn:active{background:rgba(255,100,50,.3)}
+  #sprintBtn{background:rgba(50,150,255,.1);border-color:rgba(50,150,255,.15);font-size:clamp(12px,1.6vw,18px)}
+  #sprintBtn:active{background:rgba(50,150,255,.3)}
+  #sprintBtn.active{background:rgba(50,150,255,.3);border-color:rgba(50,150,255,.5)}
+  #invBtn{position:fixed;top:55px;right:10px;width:clamp(36px,5.5vw,44px);height:clamp(36px,5.5vw,44px);border-radius:10px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.08);color:#fff;font-size:clamp(16px,2.5vw,22px);z-index:15;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);touch-action:none}
+  #invBtn:active{transform:scale(.9);background:rgba(255,255,255,.1)}
+  #inventory{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.92);backdrop-filter:blur(20px);display:none;flex-direction:column;padding:16px 14px;color:#fff}
+  #inventory.open{display:flex}
+  #invHeader{display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:12px}
+  #invHeader h2{font-size:clamp(16px,2.5vw,22px);font-weight:300;letter-spacing:2px}
+  #invHeader h2 span{color:#ff6b35}
+  #invClose{font-size:clamp(20px,3vw,28px);background:none;border:none;color:#fff;opacity:.5;padding:0 10px;touch-action:none}
+  #invClose:active{opacity:1;transform:scale(.9)}
+  #invGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1;overflow-y:auto;padding-bottom:8px;align-content:start}
+  .inv-slot{aspect-ratio:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(20px,3vw,30px);color:#888;transition:all .2s;min-height:50px;position:relative}
+  .inv-slot.has-item{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+  .inv-slot .count{position:absolute;bottom:2px;right:6px;font-size:clamp(8px,1vw,11px);color:#aaa;font-weight:700}
+  .inv-slot .name{font-size:clamp(6px,.8vw,9px);color:#666;margin-top:2px}
+  #invStats{padding:10px 0 0 0;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-around;font-size:clamp(10px,1.2vw,13px);color:#888}
+  #invStats span{color:#fff;font-weight:600}
+  #interactHint{position:fixed;bottom:50%;left:50%;transform:translate(-50%,50%);z-index:7;color:#fff;background:rgba(0,0,0,.6);padding:6px 16px;border-radius:20px;font-size:clamp(10px,1.2vw,13px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.05);display:none;pointer-events:none;text-align:center;max-width:80%}
 </style>
 </head>
 <body>
-
-<!-- ===== LOADING ===== -->
-<div id="loader">
-  <h1>GORBA CITY</h1>
-  <div class="sub">Open World</div>
-  <div class="loader-bar-wrap"><div class="loader-bar-fill" id="loaderFill"></div></div>
-  <div id="loaderPercent">0%</div>
-  <div id="loaderTips">🌍 در حال ساخت جهان...</div>
-</div>
-
-<!-- ===== HUD ===== -->
-<div id="hud">
-  <div class="hud-left">
-    <div class="hud-item"><span class="icon">❤️</span><div class="bar-wrap"><div class="bar-fill health" id="healthBar" style="width:100%"></div></div></div>
-    <div class="hud-item"><span class="icon">🍖</span><div class="bar-wrap"><div class="bar-fill hunger" id="hungerBar" style="width:100%"></div></div></div>
-    <div class="hud-item"><span class="icon">💧</span><div class="bar-wrap"><div class="bar-fill thirst" id="thirstBar" style="width:100%"></div></div></div>
-  </div>
-  <div class="hud-right">
-    <div class="time" id="gameTime">12:00</div>
-    <div id="locationName">🌆 Gorba City</div>
-  </div>
-</div>
-
-<!-- ===== CROSSHAIR ===== -->
+<div id="loader"><h1>GORBA CITY</h1><div class="sub">Open World</div><div class="loader-bar-wrap"><div class="loader-bar-fill" id="loaderFill"></div></div><div id="loaderPercent">0%</div><div id="loaderTips">🌍 در حال ساخت جهان...</div></div>
+<div id="hud"><div class="hud-left"><div class="hud-item"><span class="icon">❤️</span><div class="bar-wrap"><div class="bar-fill health" id="healthBar" style="width:100%"></div></div></div><div class="hud-item"><span class="icon">🍖</span><div class="bar-wrap"><div class="bar-fill hunger" id="hungerBar" style="width:100%"></div></div></div><div class="hud-item"><span class="icon">💧</span><div class="bar-wrap"><div class="bar-fill thirst" id="thirstBar" style="width:100%"></div></div></div></div><div class="hud-right"><div class="time" id="gameTime">12:00</div><div id="locationName">🌆 Gorba City</div></div></div>
 <div id="crosshair"><div class="dot"></div></div>
-
-<!-- ===== INTERACT HINT ===== -->
 <div id="interactHint">👆 برداشتن</div>
-
-<!-- ===== CONTROLS ===== -->
 <div id="lookArea"></div>
 <div id="joystickArea"><div id="joyKnob"></div></div>
-
-<div id="actionBtns">
-  <div class="action-btn" id="jumpBtn">پرش</div>
-  <div class="action-btn" id="sprintBtn">🏃</div>
-</div>
-
+<div id="actionBtns"><div class="action-btn" id="jumpBtn">پرش</div><div class="action-btn" id="sprintBtn">🏃</div></div>
 <div id="invBtn">🎒</div>
-
-<!-- ===== INVENTORY ===== -->
-<div id="inventory">
-  <div id="invHeader">
-    <h2>🎒 <span>کیف</span></h2>
-    <button id="invClose">✕</button>
-  </div>
-  <div id="invGrid"></div>
-  <div id="invStats">
-    <div>وزن: <span id="invWeight">0</span> / 20</div>
-    <div>آیتم‌ها: <span id="invCount">0</span></div>
-  </div>
-</div>
-
+<div id="inventory"><div id="invHeader"><h2>🎒 <span>کیف</span></h2><button id="invClose">✕</button></div><div id="invGrid"></div><div id="invStats"><div>وزن: <span id="invWeight">0</span> / 20</div><div>آیتم‌ها: <span id="invCount">0</span></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ============================================
-// CLEAR ALL CACHE - FRESH START
-// ============================================
-if ('caches' in window) {
-  caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
-}
-try { localStorage.clear(); } catch(e) {}
-try { sessionStorage.clear(); } catch(e) {}
-
+// CLEAR CACHE
+if('caches' in window)caches.keys().then(keys=>keys.forEach(key=>caches.delete(key)));
+try{localStorage.clear();}catch(e){}
+try{sessionStorage.clear();}catch(e){}
 console.log('🔥 Gorba City - Fresh Start!');
 
-// ============================================
 // LOADING
-// ============================================
-let loadProgress = 0;
-const loaderFill = document.getElementById('loaderFill');
-const loaderPercent = document.getElementById('loaderPercent');
-const loaderTips = document.getElementById('loaderTips');
-const loader = document.getElementById('loader');
-const hud = document.getElementById('hud');
+let loadProgress=0;
+const loaderFill=document.getElementById('loaderFill');
+const loaderPercent=document.getElementById('loaderPercent');
+const loaderTips=document.getElementById('loaderTips');
+const loader=document.getElementById('loader');
+const hud=document.getElementById('hud');
+const tips=['🌍 ساخت جهان...','🏙️ ساختمان‌ها...','🌳 درختان...','☀️ نور...','🎒 موجودی...'];
+function updateLoader(val){loadProgress=Math.min(val,100);loaderFill.style.width=loadProgress+'%';loaderPercent.textContent=Math.floor(loadProgress)+'%';const tipIdx=Math.min(Math.floor(loadProgress/25),tips.length-1);loaderTips.textContent=tips[tipIdx]||tips[0];}
 
-const tips = ['🌍 ساخت جهان...', '🏙️ ساختمان‌ها...', '🌳 درختان...', '☀️ نور...', '🎒 موجودی...'];
-
-function updateLoader(val) {
-  loadProgress = Math.min(val, 100);
-  loaderFill.style.width = loadProgress + '%';
-  loaderPercent.textContent = Math.floor(loadProgress) + '%';
-  const tipIdx = Math.min(Math.floor(loadProgress / 25), tips.length - 1);
-  loaderTips.textContent = tips[tipIdx] || tips[0];
-}
-
-// ============================================
 // INVENTORY
-// ============================================
-const inventory = {
-  items: [],
-  maxWeight: 20,
-  addItem(name, emoji, weight = 1) {
-    const existing = this.items.find(i => i.name === name);
-    if (existing) { existing.count++; return true; }
-    if (this.getTotalWeight() + weight > this.maxWeight) return false;
-    this.items.push({ name, emoji, weight, count: 1 });
-    return true;
-  },
-  removeItem(name) {
-    const idx = this.items.findIndex(i => i.name === name);
-    if (idx === -1) return false;
-    this.items[idx].count--;
-    if (this.items[idx].count <= 0) this.items.splice(idx, 1);
-    return true;
-  },
-  getTotalWeight() { return this.items.reduce((sum, i) => sum + (i.weight * i.count), 0); },
-  getTotalCount() { return this.items.reduce((sum, i) => sum + i.count, 0); }
-};
+const inventory={items:[],maxWeight:20,addItem(name,emoji,weight=1){const existing=this.items.find(i=>i.name===name);if(existing){existing.count++;return true;}if(this.getTotalWeight()+weight>this.maxWeight)return false;this.items.push({name,emoji,weight,count:1});return true;},removeItem(name){const idx=this.items.findIndex(i=>i.name===name);if(idx===-1)return false;this.items[idx].count--;if(this.items[idx].count<=0)this.items.splice(idx,1);return true;},getTotalWeight(){return this.items.reduce((sum,i)=>sum+(i.weight*i.count),0);},getTotalCount(){return this.items.reduce((sum,i)=>sum+i.count,0);}};
 
-// ============================================
-// THREE.JS SETUP
-// ============================================
+// THREE.JS
 updateLoader(10);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x6a9ec4);
-scene.fog = new THREE.FogExp2(0x6a9ec4, 0.003);
-
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x6a9ec4);
+scene.fog=new THREE.FogExp2(0x6a9ec4,0.003);
 updateLoader(20);
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 300);
-camera.rotation.order = 'YXZ';
-
+const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,300);
+camera.rotation.order='YXZ';
 updateLoader(30);
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
 document.body.appendChild(renderer.domElement);
 
-// ============================================
 // LIGHTING
-// ============================================
 updateLoader(40);
-const ambient = new THREE.AmbientLight(0x446688, 0.5);
+const ambient=new THREE.AmbientLight(0x446688,0.5);
 scene.add(ambient);
-
-const hemi = new THREE.HemisphereLight(0xffeedd, 0x224466, 0.9);
+const hemi=new THREE.HemisphereLight(0xffeedd,0x224466,0.9);
 scene.add(hemi);
-
-const sun = new THREE.DirectionalLight(0xffeedd, 1.5);
-sun.position.set(60, 100, -40);
-sun.castShadow = true;
-sun.shadow.mapSize.width = 2048;
-sun.shadow.mapSize.height = 2048;
-sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 180;
-sun.shadow.camera.left = -80;
-sun.shadow.camera.right = 80;
-sun.shadow.camera.top = 80;
-sun.shadow.camera.bottom = -80;
-sun.shadow.bias = -0.001;
+const sun=new THREE.DirectionalLight(0xffeedd,1.5);
+sun.position.set(60,100,-40);
+sun.castShadow=true;
+sun.shadow.mapSize.width=2048;
+sun.shadow.mapSize.height=2048;
+sun.shadow.camera.near=1;
+sun.shadow.camera.far=180;
+sun.shadow.camera.left=-80;
+sun.shadow.camera.right=80;
+sun.shadow.camera.top=80;
+sun.shadow.camera.bottom=-80;
+sun.shadow.bias=-0.001;
 scene.add(sun);
-
-const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
-fillLight.position.set(-40, 30, 50);
+const fillLight=new THREE.DirectionalLight(0x8888ff,0.3);
+fillLight.position.set(-40,30,50);
 scene.add(fillLight);
 
-// ============================================
 // TERRAIN
-// ============================================
 updateLoader(50);
-const GRID = 50;
-const heights = [];
-const center = GRID/2;
+const GRID=50, heights=[], center=GRID/2;
+function smoothHeight(x,z){const dx=x-center,dz=z-center,dist=Math.hypot(dx,dz);let h=0;if(dist<10)h=0;else if(dist<14)h=(dist-10)*0.2;else{h=1.5+Math.sin(x*0.05+z*0.03)*2+Math.cos(x*0.07-z*0.05)*1.5;if(dist>25)h+=(dist-25)*0.06;if(dist>10&&dist<18)h-=0.5;h=Math.max(0,h);}return Math.round(h*10)/10;}
+for(let x=0;x<GRID;x++){heights[x]=[];for(let z=0;z<GRID;z++){heights[x][z]=smoothHeight(x,z);}}
+function heightAt(gx,gz){gx=Math.max(0,Math.min(GRID-1,gx));gz=Math.max(0,Math.min(GRID-1,gz));return heights[gx][gz];}
 
-function smoothHeight(x, z) {
-  const dx = x - center, dz = z - center;
-  const dist = Math.hypot(dx, dz);
-  let h = 0;
-  if (dist < 10) h = 0;
-  else if (dist < 14) h = (dist - 10) * 0.2;
-  else {
-    h = 1.5 + Math.sin(x * 0.05 + z * 0.03) * 2;
-    h += Math.cos(x * 0.07 - z * 0.05) * 1.5;
-    if (dist > 25) h += (dist - 25) * 0.06;
-    if (dist > 10 && dist < 18) h -= 0.5;
-    h = Math.max(0, h);
-  }
-  return Math.round(h * 10) / 10;
-}
-
-for (let x = 0; x < GRID; x++) {
-  heights[x] = [];
-  for (let z = 0; z < GRID; z++) {
-    heights[x][z] = smoothHeight(x, z);
-  }
-}
-
-function heightAt(gx, gz) {
-  gx = Math.max(0, Math.min(GRID-1, gx));
-  gz = Math.max(0, Math.min(GRID-1, gz));
-  return heights[gx][gz];
-}
-
-// ============================================
 // GROUND
-// ============================================
 updateLoader(60);
-const groundGroup = new THREE.Group();
-const grassColors = [0x5a8c4a, 0x6a9c5a, 0x4a7c3a, 0x7aaa6a];
-const dirtColor = 0x8a7a5a;
-const rockColor = 0x8a8a86;
-
-function getGroundColor(h, x, z) {
-  const dx = x - center, dz = z - center;
-  const dist = Math.hypot(dx, dz);
-  if (dist < 8) return dirtColor;
-  if (dist < 10) return 0x9a8a6a;
-  if (dist > 27) return rockColor;
-  if (h < 0.5) return grassColors[0];
-  if (h < 1.5) return grassColors[1];
-  if (h < 3) return grassColors[2];
-  return grassColors[3];
-}
-
-const geoGround = new THREE.PlaneGeometry(1, 1);
-for (let x = 0; x < GRID; x++) {
-  for (let z = 0; z < GRID; z++) {
-    const h = heights[x][z];
-    const mat = new THREE.MeshStandardMaterial({
-      color: getGroundColor(h, x, z),
-      roughness: 0.85,
-      metalness: 0.0,
-    });
-    const tile = new THREE.Mesh(geoGround, mat);
-    tile.rotation.x = -Math.PI/2;
-    tile.position.set(x - center, h, z - center);
-    tile.receiveShadow = true;
-    groundGroup.add(tile);
-  }
-}
+const groundGroup=new THREE.Group();
+const grassColors=[0x5a8c4a,0x6a9c5a,0x4a7c3a,0x7aaa6a];
+const dirtColor=0x8a7a5a, rockColor=0x8a8a86;
+function getGroundColor(h,x,z){const dx=x-center,dz=z-center,dist=Math.hypot(dx,dz);if(dist<8)return dirtColor;if(dist<10)return 0x9a8a6a;if(dist>27)return rockColor;if(h<0.5)return grassColors[0];if(h<1.5)return grassColors[1];if(h<3)return grassColors[2];return grassColors[3];}
+const geoGround=new THREE.PlaneGeometry(1,1);
+for(let x=0;x<GRID;x++){for(let z=0;z<GRID;z++){const h=heights[x][z];const mat=new THREE.MeshStandardMaterial({color:getGroundColor(h,x,z),roughness:.85,metalness:0});const tile=new THREE.Mesh(geoGround,mat);tile.rotation.x=-Math.PI/2;tile.position.set(x-center,h,z-center);tile.receiveShadow=true;groundGroup.add(tile);}}
 scene.add(groundGroup);
 
-// ============================================
 // BUILDINGS
-// ============================================
 updateLoader(70);
-const buildingColors = [0xccbb99, 0xbbaa88, 0xddccaa, 0xaa9977, 0xccaa88];
-const roofColors = [0x664433, 0x554433, 0x665544, 0x443322];
+const buildingColors=[0xccbb99,0xbbaa88,0xddccaa,0xaa9977,0xccaa88];
+const roofColors=[0x664433,0x554433,0x665544,0x443322];
+function makeBuilding(x,z,w,h,d,color,roofColor){const g=new THREE.Group();const bodyMat=new THREE.MeshStandardMaterial({color,roughness:.6,metalness:.05});const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),bodyMat);body.position.y=h/2;body.castShadow=true;body.receiveShadow=true;g.add(body);const roofMat=new THREE.MeshStandardMaterial({color:roofColor,roughness:.8});const roof=new THREE.Mesh(new THREE.BoxGeometry(w*1.02,.15,d*1.02),roofMat);roof.position.y=h+.08;roof.receiveShadow=true;g.add(roof);const groundH=heightAt(Math.round(x+center),Math.round(z+center));g.position.set(x,groundH,z);scene.add(g);}
+for(let i=0;i<40;i++){const gx=Math.floor(Math.random()*GRID),gz=Math.floor(Math.random()*GRID),dx=gx-center,dz=gz-center,dist=Math.hypot(dx,dz);if(dist<8||dist>27)continue;const w=1.5+Math.random()*3,d=1.5+Math.random()*3,h=2+Math.random()*8,ci=Math.floor(Math.random()*buildingColors.length),ri=Math.floor(Math.random()*roofColors.length);makeBuilding(dx,dz,w,h,d,buildingColors[ci],roofColors[ri]);}
 
-function makeBuilding(x, z, w, h, d, color, roofColor) {
-  const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.05 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat);
-  body.position.y = h/2;
-  body.castShadow = true;
-  body.receiveShadow = true;
-  g.add(body);
-
-  const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.8 });
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.15, d * 1.02), roofMat);
-  roof.position.y = h + 0.08;
-  roof.receiveShadow = true;
-  g.add(roof);
-
-  const groundH = heightAt(Math.round(x + center), Math.round(z + center));
-  g.position.set(x, groundH, z);
-  scene.add(g);
-}
-
-for (let i = 0; i < 40; i++) {
-  const gx = Math.floor(Math.random() * GRID);
-  const gz = Math.floor(Math.random() * GRID);
-  const dx = gx - center, dz = gz - center;
-  const dist = Math.hypot(dx, dz);
-  if (dist < 8 || dist > 27) continue;
-  const w = 1.5 + Math.random() * 3;
-  const d = 1.5 + Math.random() * 3;
-  const h = 2 + Math.random() * 8;
-  const ci = Math.floor(Math.random() * buildingColors.length);
-  const ri = Math.floor(Math.random() * roofColors.length);
-  makeBuilding(dx, dz, w, h, d, buildingColors[ci], roofColors[ri]);
-}
-
-// ============================================
 // TREES
-// ============================================
 updateLoader(80);
-function makeTree(x, z) {
-  const g = new THREE.Group();
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6a4a3a, roughness: 0.9 });
-  const leafMat = new THREE.MeshStandardMaterial({ color: 0x3a7a2a, roughness: 0.8 });
+function makeTree(x,z){const g=new THREE.Group();const trunkMat=new THREE.MeshStandardMaterial({color:0x6a4a3a,roughness:.9});const leafMat=new THREE.MeshStandardMaterial({color:0x3a7a2a,roughness:.8});const h=heightAt(Math.round(x+center),Math.round(z+center));const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.1,.18,2+Math.random(),6),trunkMat);trunk.position.y=h+1+Math.random()*.5;trunk.castShadow=true;g.add(trunk);const crown=new THREE.Mesh(new THREE.SphereGeometry(.8+Math.random()*.4,6,6),leafMat);crown.position.set(0,h+2.8+Math.random()*.5,0);crown.scale.set(1,.7,1);crown.castShadow=true;g.add(crown);g.position.set(x,0,z);scene.add(g);}
+for(let i=0;i<50;i++){const gx=Math.floor(Math.random()*GRID),gz=Math.floor(Math.random()*GRID),dx=gx-center,dz=gz-center,dist=Math.hypot(dx,dz);if(dist>6&&dist<25&&Math.random()>.3)makeTree(dx,dz);}
 
-  const h = heightAt(Math.round(x + center), Math.round(z + center));
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.18, 2 + Math.random(), 6), trunkMat);
-  trunk.position.y = h + 1 + Math.random() * 0.5;
-  trunk.castShadow = true;
-  g.add(trunk);
-
-  const crown = new THREE.Mesh(new THREE.SphereGeometry(0.8 + Math.random()*0.4, 6, 6), leafMat);
-  crown.position.set(0, h + 2.8 + Math.random()*0.5, 0);
-  crown.scale.set(1, 0.7, 1);
-  crown.castShadow = true;
-  g.add(crown);
-
-  g.position.set(x, 0, z);
-  scene.add(g);
-}
-
-for (let i = 0; i < 50; i++) {
-  const gx = Math.floor(Math.random() * GRID);
-  const gz = Math.floor(Math.random() * GRID);
-  const dx = gx - center, dz = gz - center;
-  const dist = Math.hypot(dx, dz);
-  if (dist > 6 && dist < 25 && Math.random() > 0.3) {
-    makeTree(dx, dz);
-  }
-}
-
-// ============================================
 // PLAYER
-// ============================================
 updateLoader(90);
-const player = {
-  x: 0, z: 0,
-  feetY: heightAt(Math.round(center), Math.round(center)),
-  velY: 0,
-  yaw: 0,
-  pitch: 0,
-  onGround: true,
-  sprinting: false
-};
-const EYE_HEIGHT = 1.6;
-const GRAVITY = 22;
-const JUMP_SPEED = 7.5;
-const MOVE_SPEED = 5;
-const SPRINT_SPEED = 9;
+const player={x:0,z:0,feetY:heightAt(Math.round(center),Math.round(center)),velY:0,yaw:0,pitch:0,onGround:true,sprinting:false};
+const EYE_HEIGHT=1.6,GRAVITY=22,JUMP_SPEED=7.5,MOVE_SPEED=5,SPRINT_SPEED=9;
 
-// ============================================
 // CONTROLS
-// ============================================
-const lookArea = document.getElementById('lookArea');
-let looking = false, lastX = 0, lastY = 0;
+const lookArea=document.getElementById('lookArea');
+let looking=false,lastX=0,lastY=0;
+lookArea.addEventListener('pointerdown',e=>{looking=true;lastX=e.clientX;lastY=e.clientY;lookArea.setPointerCapture(e.pointerId);});
+lookArea.addEventListener('pointerup',()=>{looking=false;});
+lookArea.addEventListener('pointermove',e=>{if(!looking)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;player.yaw-=dx*.005;player.pitch-=dy*.005;player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch));});
 
-lookArea.addEventListener('pointerdown', (e) => {
-  looking = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  lookArea.setPointerCapture(e.pointerId);
-});
-lookArea.addEventListener('pointerup', () => { looking = false; });
-lookArea.addEventListener('pointermove', (e) => {
-  if (!looking) return;
-  const dx = e.clientX - lastX;
-  const dy = e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  player.yaw -= dx * 0.005;
-  player.pitch -= dy * 0.005;
-  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
-});
+const joystickArea=document.getElementById('joystickArea');
+const joyKnob=document.getElementById('joyKnob');
+let joyActive=false,joyCenter={x:0,y:0},joyVec={x:0,y:0};
+const JOY_MAX=40;
+joystickArea.addEventListener('pointerdown',e=>{joyActive=true;const r=joystickArea.getBoundingClientRect();joyCenter={x:r.left+r.width/2,y:r.top+r.height/2};joystickArea.setPointerCapture(e.pointerId);});
+joystickArea.addEventListener('pointerup',()=>{joyActive=false;joyVec={x:0,y:0};joyKnob.style.transform='translate(-50%,-50%)';});
+joystickArea.addEventListener('pointermove',e=>{if(!joyActive)return;let dx=e.clientX-joyCenter.x,dy=e.clientY-joyCenter.y;const len=Math.hypot(dx,dy);if(len>JOY_MAX){dx=dx/len*JOY_MAX;dy=dy/len*JOY_MAX;}joyKnob.style.transform=`translate(${-50+(dx/JOY_MAX)*50}%,${-50+(dy/JOY_MAX)*50}%)`;joyVec={x:dx/JOY_MAX,y:dy/JOY_MAX};});
 
-// Joystick
-const joystickArea = document.getElementById('joystickArea');
-const joyKnob = document.getElementById('joyKnob');
-let joyActive = false, joyCenter = { x: 0, y: 0 }, joyVec = { x: 0, y: 0 };
-const JOY_MAX = 40;
+document.getElementById('jumpBtn').addEventListener('pointerdown',()=>{if(player.onGround){player.velY=JUMP_SPEED;player.onGround=false;}});
+let sprinting=false;
+document.getElementById('sprintBtn').addEventListener('pointerdown',()=>{sprinting=!sprinting;document.getElementById('sprintBtn').classList.toggle('active');});
 
-joystickArea.addEventListener('pointerdown', (e) => {
-  joyActive = true;
-  const r = joystickArea.getBoundingClientRect();
-  joyCenter = { x: r.left + r.width/2, y: r.top + r.height/2 };
-  joystickArea.setPointerCapture(e.pointerId);
-});
-joystickArea.addEventListener('pointerup', () => {
-  joyActive = false;
-  joyVec = { x: 0, y: 0 };
-  joyKnob.style.transform = 'translate(-50%,-50%)';
-});
-joystickArea.addEventListener('pointermove', (e) => {
-  if (!joyActive) return;
-  let dx = e.clientX - joyCenter.x;
-  let dy = e.clientY - joyCenter.y;
-  const len = Math.hypot(dx, dy);
-  if (len > JOY_MAX) { dx = dx/len * JOY_MAX; dy = dy/len * JOY_MAX; }
-  joyKnob.style.transform = `translate(${-50 + (dx/JOY_MAX)*50}%, ${-50 + (dy/JOY_MAX)*50}%)`;
-  joyVec = { x: dx/JOY_MAX, y: dy/JOY_MAX };
-});
-
-// Jump
-document.getElementById('jumpBtn').addEventListener('pointerdown', () => {
-  if (player.onGround) {
-    player.velY = JUMP_SPEED;
-    player.onGround = false;
-  }
-});
-
-// Sprint
-let sprinting = false;
-document.getElementById('sprintBtn').addEventListener('pointerdown', () => {
-  sprinting = !sprinting;
-  document.getElementById('sprintBtn').classList.toggle('active');
-});
-
-// ============================================
 // RESIZE
-// ============================================
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
 
-// ============================================
 // GAME LOOP
-// ============================================
-const clock = new THREE.Clock();
-let gameTime = 720;
+const clock=new THREE.Clock();
+let gameTime=720;
+function animate(){requestAnimationFrame(animate);const dt=Math.min(.05,clock.getDelta());gameTime=(gameTime+dt*2)%1440;const hours=Math.floor(gameTime/60),mins=Math.floor(gameTime%60);document.getElementById('gameTime').textContent=`${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;const speed=sprinting?SPRINT_SPEED:MOVE_SPEED;const forward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),player.yaw);const right=new THREE.Vector3(1,0,0).applyAxisAngle(new THREE.Vector3(0,1,0),player.yaw);const moveX=joyVec.x,moveZ=-joyVec.y;const mvx=(forward.x*moveZ+right.x*moveX)*speed*dt;const mvz=(forward.z*moveZ+right.z*moveX)*speed*dt;player.x+=mvx;player.z+=mvz;const half=center-.5;player.x=Math.max(-half,Math.min(half,player.x));player.z=Math.max(-half,Math.min(half,player.z));const groundY=heightAt(Math.round(player.x+center),Math.round(player.z+center));player.velY-=GRAVITY*dt;const nextFeetY=player.feetY+player.velY*dt;if(nextFeetY<=groundY){player.feetY=groundY;player.velY=0;player.onGround=true;}else{player.feetY=nextFeetY;player.onGround=false;}camera.position.set(player.x,player.feetY+EYE_HEIGHT,player.z);camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;renderer.render(scene,camera);}
 
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(0.05, clock.getDelta());
+// START
+updateLoader(100);
+setTimeout(()=>{loader.classList.add('hidden');hud.style.display='flex';document.getElementById('locationName').textContent='🌆 Gorba City';animate();},600);
 
-  // Time
-  gameTime = (gameTime + dt * 2) % 1440;
-  const hours = Math.floor(gameTime / 60);
-  const mins = Math.floor(gameTime % 60);
-  document.getElementById('gameTime').textContent =
-    `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+// INVENTORY UI
+function updateInventoryUI(){const grid=document.getElementById('invGrid');grid.innerHTML='';inventory.items.forEach(item=>{const slot=document.createElement('div');slot.className='inv-slot has-item';slot.innerHTML=`${item.emoji}<span class="count">${item.count}</span><span class="name">${item.name}</span>`;grid.appendChild(slot);});document.getElementById('invWeight').textContent=inventory.getTotalWeight().toFixed(1);document.getElementById('invCount').textContent=inventory.getTotalCount();}
+document.getElementById('invBtn').addEventListener('click',()=>{document.getElementById('inventory').classList.toggle('open');updateInventoryUI();});
+document.getElementById('invClose').addEventListener('click',()=>{document.getElementById('inventory').classList.remove('open');});
 
-  // Movement
-  const speed = sprinting ? SPRINT_SPEED : MOVE_SPEED;
-  const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
-  const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
-  const moveX = joyVec.x;
-  const moveZ = -joyVec.y;
-  const mvx = (forward.x * moveZ + right.x * moveX) * speed * dt;
-  const mvz = (forward.z * moveZ + right.z * moveX) * speed * dt;
-  player.x += mvx;
-  player.z += mvz;
-  const half = center - 0.5;
-  player.x = Math.max(-half, Math.min(half, player.x));
-  player.z = Math.max(-half, Math.min(half, player.z));
-
-  // Gravity
-  const groundY = heightAt(Math.round(player.x + center), Math.round(player.z + center));
-  player.velY -= GRAVITY * dt;
-  const nextFeetY = player.feetY + player.velY * dt;
-  if (nextFeetY <= groundY) {
-    player.feetY = groundY;
-    player.velY = 0;
-    player.onGround = true;
-  } else {
-    player.feetY = nextFeetY;
-    player.onGround = false;
-  }
-
-  camera.position.set(player.x, player.feetY + EYE_HEIGHT, player.z);
-  camera.rotation.y = player.yaw;
-  camera.rotation.x = player.pitch;
-
-  renderer.render(scene, camera);
-}
-
-// ===========================================
+console.log('🏙️ Gorba City Loaded!');
+</script>
+</body>
+</html>
