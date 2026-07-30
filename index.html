@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Gorba City - Endless Highway</title>
+<title>Gorba City - Car & Engine Upgrade</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
   html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:sans-serif;touch-action:none}
@@ -12,7 +12,7 @@
   #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;color:rgba(255,255,255,0.7);font-size:18px;pointer-events:none}
   #lookArea{position:fixed;top:0;right:0;width:60%;height:100%;z-index:10;touch-action:none}
 
-  /* WALK CONTROLS (D-PAD) */
+  /* WALK CONTROLS */
   #dpad{position:fixed;bottom:20px;left:20px;width:110px;height:110px;z-index:20;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px}
   .dbtn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;touch-action:none}
   .dbtn:active{background:rgba(255,255,255,0.4)}
@@ -22,14 +22,15 @@
   #btnRight{grid-column:3;grid-row:2}
   #btnDown{grid-column:2;grid-row:3}
 
-  /* CAR CONTROLS */
-  #enterCarBtn{position:fixed;bottom:140px;left:25px;z-index:25;background:rgba(255,165,0,0.8);border:none;color:#fff;padding:12px 18px;border-radius:25px;font-weight:bold;display:none;font-size:14px;box-shadow:0 0 15px rgba(255,165,0,0.4)}
+  /* CAR CONTROLS & HUD */
+  #enterCarBtn{position:fixed;bottom:140px;left:25px;z-index:25;background:rgba(255,165,0,0.85);border:none;color:#fff;padding:12px 18px;border-radius:25px;font-weight:bold;display:none;font-size:14px;box-shadow:0 0 15px rgba(255,165,0,0.4)}
   #carPedals{position:fixed;bottom:20px;left:20px;z-index:25;display:none;flex-direction:column;gap:10px}
   .pedal{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
   .pedal:active{background:rgba(255,255,255,0.5)}
   #carSteering{position:fixed;bottom:25px;right:25px;z-index:25;display:none;gap:15px}
   .steerBtn{width:65px;height:65px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.5);border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
-  .steerBtn:active{background:rgba(255,255,255,0.5)}
+  
+  #speedometerUI{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,0.7);color:#00ffcc;padding:8px 20px;border-radius:20px;font-family:monospace;font-size:18px;border:1px solid #00ffcc;display:none}
 
   /* HOTBAR */
   #hudContainer{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
@@ -37,15 +38,13 @@
   .slot{width:38px;height:38px;background:rgba(255,255,255,0.08);border:1px solid #555;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;position:relative;cursor:pointer}
   .slot.active{border-color:#ff9900;background:rgba(255,255,255,0.2)}
   .slot .count{position:absolute;bottom:1px;right:3px;font-size:9px;font-weight:bold;color:#fff}
-  
-  #interactHint{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);z-index:20;background:rgba(0,0,0,0.7);color:#fff;padding:8px 16px;border-radius:15px;font-size:13px;display:none;pointer-events:none}
 </style>
 </head>
 <body>
 
 <div id="crosshair">+</div>
 <div id="lookArea"></div>
-<div id="interactHint">برای تعامل کلیک کنید</div>
+<div id="speedometerUI"><span id="speedVal">0</span> KM/H | <span id="engineLvlVal">LVL 1</span></div>
 
 <!-- WALK D-PAD -->
 <div id="dpad">
@@ -83,7 +82,7 @@
 // SCENE SETUP
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
-scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
+scene.fog = new THREE.FogExp2(0x87ceeb, 0.007);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
 camera.rotation.order = 'YXZ';
@@ -92,7 +91,6 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 window.addEventListener('resize', () => {
@@ -107,11 +105,9 @@ scene.add(ambient);
 const sun = new THREE.DirectionalLight(0xfffaed, 1.2);
 sun.position.set(80, 120, 50);
 sun.castShadow = true;
-sun.shadow.mapSize.width = 2048;
-sun.shadow.mapSize.height = 2048;
 scene.add(sun);
 
-// TERRAIN & ENDLESS CURVED ROAD
+// GROUND & ENDLESS ROAD
 const groundGeo = new THREE.PlaneGeometry(600, 600);
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x3d6b2c, roughness: 0.9 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -119,44 +115,19 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// ROAD CURVE
 const roadPoints = [];
-for (let i = -300; i < 300; i += 10) {
-  roadPoints.push(new THREE.Vector3(Math.sin(i * 0.03) * 25, 0.02, i));
-}
+for (let i = -300; i < 300; i += 10) roadPoints.push(new THREE.Vector3(Math.sin(i * 0.03) * 25, 0.02, i));
 const roadCurve = new THREE.CatmullRomCurve3(roadPoints);
-const roadGeo = new THREE.TubeGeometry(roadCurve, 200, 4, 8, false);
+const roadGeo = new THREE.TubeGeometry(roadCurve, 200, 4.5, 8, false);
 const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
 const road = new THREE.Mesh(roadGeo, roadMat);
 road.scale.set(1, 0.01, 1);
 road.receiveShadow = true;
 scene.add(road);
 
-// REALISTIC HUMAN BODY (GTA STYLE)
-const playerGroup = new THREE.Group();
-scene.add(playerGroup);
-
-const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 });
-const shirtMat = new THREE.MeshStandardMaterial({ color: 0x1a365d, roughness: 0.7 });
-const jeansMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.8 });
-
-// Torso
-const torsoGeo = new THREE.CylinderGeometry(0.22, 0.18, 0.65, 12);
-const torso = new THREE.Mesh(torsoGeo, shirtMat);
-torso.position.y = 1.05;
-torso.castShadow = true;
-playerGroup.add(torso);
-
-// Legs & Shoes
-const legGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.7, 10);
-const leftLeg = new THREE.Mesh(legGeo, jeansMat);
-leftLeg.position.set(-0.12, 0.35, 0);
-const rightLeg = new THREE.Mesh(legGeo, jeansMat);
-rightLeg.position.set(0.12, 0.35, 0);
-playerGroup.add(leftLeg, rightLeg);
-
-// FIRST PERSON HAND & MINI AXE
+// HAND & AXE ONLY (BLUE BODY REMOVED)
 const handGroup = new THREE.Group();
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 });
 const armMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.45, 10), skinMat);
 armMesh.rotation.x = Math.PI / 3;
 armMesh.position.set(0, -0.1, 0.1);
@@ -164,7 +135,7 @@ handGroup.add(armMesh);
 
 const axeGroup = new THREE.Group();
 const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.35), new THREE.MeshStandardMaterial({color: 0x5c4033}));
-const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.02), new THREE.MeshStandardMaterial({color: 0x888888, metalness: 0.8, roughness: 0.2}));
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.02), new THREE.MeshStandardMaterial({color: 0x888888, metalness: 0.8}));
 blade.position.set(0.05, 0.12, 0);
 axeGroup.add(handle, blade);
 axeGroup.position.set(0.05, 0.05, -0.2);
@@ -175,130 +146,84 @@ handGroup.position.set(0.25, -0.22, -0.35);
 camera.add(handGroup);
 scene.add(camera);
 
-// REALISTIC TREES
-const treeList = [];
-function createRealisticTree(x, z) {
-  const g = new THREE.Group();
-  
-  // Trunk
-  const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 4.5, 10);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a2e16, roughness: 0.9 });
-  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-  trunk.position.y = 2.25;
-  trunk.castShadow = true;
-  trunk.receiveShadow = true;
-  g.add(trunk);
-
-  // Foliage Layer 1 & 2
-  const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e4d2b, roughness: 0.8 });
-  const f1 = new THREE.Mesh(new THREE.ConeGeometry(2.2, 3.5, 8), leafMat);
-  f1.position.y = 4.5;
-  f1.castShadow = true;
-  const f2 = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2.8, 8), leafMat);
-  f2.position.y = 6;
-  f2.castShadow = true;
-  g.add(f1, f2);
-
-  g.position.set(x, 0, z);
-  scene.add(g);
-  treeList.push({ group: g, trunk, hits: 0, x, z });
-}
-
-for(let i=0; i<60; i++){
-  const rx = (Math.random()-0.5)*250;
-  const rz = (Math.random()-0.5)*250;
-  if(Math.abs(rx) > 8) createRealisticTree(rx, rz);
-}
-
-// CLASSIC CAR WITH HOOD, TRUNK & ENGINE LEVEL
+// REALISTIC CAR WITH DETAILED INTERIOR
 const carGroup = new THREE.Group();
-const carBodyMat = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.5, roughness: 0.3 });
+const carBodyMat = new THREE.MeshStandardMaterial({ color: 0x990000, metalness: 0.6, roughness: 0.3 });
 
-// Body Base
-const carBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.7, 4.2), carBodyMat);
-carBase.position.y = 0.55;
+// Main Frame (Larger Size)
+const carBase = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.8, 4.8), carBodyMat);
+carBase.position.y = 0.65;
 carBase.castShadow = true;
 carGroup.add(carBase);
 
-// Cabin
-const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 }));
-cabin.position.set(0, 1.15, -0.2);
-carGroup.add(cabin);
+// Roof & Pillars
+const cabinRoof = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.8, 2.4), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, transparent: true, opacity: 0.85 }));
+cabinRoof.position.set(0, 1.4, -0.2);
+carGroup.add(cabinRoof);
 
-// Hood (Kapot)
+// INTERIOR: Dashboard, Seats & Steering Wheel
+const dashBoard = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 0.5), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+dashBoard.position.set(0, 1.0, 0.6);
+carGroup.add(dashBoard);
+
+// Seats
+const seatMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+const driverSeat = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.7), seatMat);
+driverSeat.position.set(-0.5, 0.8, -0.2);
+const passengerSeat = driverSeat.clone();
+passengerSeat.position.x = 0.5;
+carGroup.add(driverSeat, passengerSeat);
+
+// Steering Wheel
+const steeringGroup = new THREE.Group();
+const ringGeo = new THREE.TorusGeometry(0.18, 0.02, 8, 24);
+const ringMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
+const ring = new THREE.Mesh(ringGeo, ringMat);
+steeringGroup.add(ring);
+steeringGroup.position.set(-0.5, 1.15, 0.35);
+steeringGroup.rotation.x = -0.3;
+carGroup.add(steeringGroup);
+
+// HOOD & TRUNK
 const hoodGroup = new THREE.Group();
-const hoodMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 1.2), carBodyMat);
-hoodMesh.position.set(0, 0, 0.6);
+const hoodMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 1.4), carBodyMat);
+hoodMesh.position.set(0, 0, 0.7);
 hoodGroup.add(hoodMesh);
-hoodGroup.position.set(0, 0.9, 0.9);
+hoodGroup.position.set(0, 1.05, 1.0);
 carGroup.add(hoodGroup);
 
-// Engine inside Hood
-const engineGroup = new THREE.Group();
-const engineBlock = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.7), new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9 }));
-engineGroup.add(engineBlock);
-engineGroup.position.set(0, 0.65, 1.3);
-carGroup.add(engineGroup);
-
-// Engine Level Label Canvas
-let engineLevel = 1;
-const canvas = document.createElement('canvas');
-canvas.width = 256; canvas.height = 128;
-const ctx = canvas.getContext('2d');
-ctx.fillStyle = '#ff9900'; ctx.font = 'Bold 40px Arial';
-ctx.fillText('Engine Lvl 1', 10, 70);
-const labelTex = new THREE.CanvasTexture(canvas);
-const labelGeo = new THREE.PlaneGeometry(0.8, 0.4);
-const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true });
-const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-labelMesh.position.set(0, 1.1, 1.3);
-labelMesh.rotation.x = -Math.PI / 4;
-carGroup.add(labelMesh);
-
-// Trunk (Sandoogh)
 const trunkGroup = new THREE.Group();
-const trunkMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 1.0), carBodyMat);
-trunkMesh.position.set(0, 0, -0.5);
+const trunkMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 1.2), carBodyMat);
+trunkMesh.position.set(0, 0, -0.6);
 trunkGroup.add(trunkMesh);
-trunkGroup.position.set(0, 0.9, -1.5);
+trunkGroup.position.set(0, 1.05, -1.7);
 carGroup.add(trunkGroup);
 
+// Engine Block Inside Hood
+let engineLevel = 1;
+const engineBlock = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.8), new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.9 }));
+engineBlock.position.set(0, 0.85, 1.5);
+carGroup.add(engineBlock);
+
 // Wheels
-const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 16);
-const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-const wPositions = [[-0.95,0.32,1.3], [0.95,0.32,1.3], [-0.95,0.32,-1.3], [0.95,0.32,-1.3]];
-wPositions.forEach(p => {
+const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+[[-1.15,0.4,1.5], [1.15,0.4,1.5], [-1.15,0.4,-1.5], [1.15,0.4,-1.5]].forEach(p => {
   const w = new THREE.Mesh(wheelGeo, wheelMat);
   w.rotation.z = Math.PI / 2;
   w.position.set(...p);
-  w.castShadow = true;
   carGroup.add(w);
 });
 
 carGroup.position.set(5, 0, 10);
 scene.add(carGroup);
 
-// INVENTORY & SLOTS
-let selectedSlot = 0;
-const inventoryData = [{ emoji: '🪓', type: 'axe', count: 1 }, null, null, null, null];
-const slotsUI = document.querySelectorAll('#hotbar .slot');
-
-slotsUI.forEach(slot => {
-  slot.addEventListener('click', () => {
-    slotsUI.forEach(s => s.classList.remove('active'));
-    slot.classList.add('active');
-    selectedSlot = parseInt(slot.dataset.idx);
-    const held = inventoryData[selectedSlot];
-    axeGroup.visible = (held && held.type === 'axe');
-  });
-});
-
 // PLAYER & CAR STATE
 const player = { x: 0, z: 0, y: 0, velY: 0, yaw: 0, pitch: 0, onGround: true, inCar: false };
-const carState = { speed: 0, steer: 0, hoodOpen: false, trunkOpen: false };
+const carState = { speed: 0, steerAngle: 0, hoodOpen: false, trunkOpen: false };
 const moveState = { fwd: false, bwd: false, lft: false, rgt: false };
 
-// CONTROLS
+// BINDINGS
 const bindBtn = (id, key) => {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', (e) => { e.preventDefault(); moveState[key] = true; });
@@ -310,7 +235,6 @@ document.getElementById('btnJump').addEventListener('pointerdown', () => {
   if (player.onGround && !player.inCar) { player.velY = 6.5; player.onGround = false; }
 });
 
-// CAR PEDALS BINDING
 const carPedalBind = (id, action) => {
   const el = document.getElementById(id);
   el.addEventListener('pointerdown', () => carState[action] = true);
@@ -328,14 +252,16 @@ enterCarBtn.addEventListener('click', () => {
     document.getElementById('dpad').style.display = 'none';
     document.getElementById('carPedals').style.display = 'flex';
     document.getElementById('carSteering').style.display = 'flex';
+    document.getElementById('speedometerUI').style.display = 'block';
     handGroup.visible = false;
   } else {
     enterCarBtn.textContent = '🚗 نشستن در ماشین';
     document.getElementById('dpad').style.display = 'grid';
     document.getElementById('carPedals').style.display = 'none';
     document.getElementById('carSteering').style.display = 'none';
+    document.getElementById('speedometerUI').style.display = 'none';
     handGroup.visible = true;
-    player.x = carGroup.position.x - 2;
+    player.x = carGroup.position.x - 2.5;
     player.z = carGroup.position.z;
   }
 });
@@ -354,17 +280,15 @@ lookArea.addEventListener('pointermove', e => {
   player.pitch = Math.max(-1.3, Math.min(1.3, player.pitch));
 });
 
-// RAYCASTING FOR TREES & CAR PARTS
+// INTERACT (HOOD & TRUNK)
 const raycaster = new THREE.Raycaster();
 window.addEventListener('pointerdown', (e) => {
   if (e.target.closest('#dpad') || e.target.closest('#hudContainer') || e.target.closest('#carPedals') || e.target.closest('#carSteering') || player.inCar) return;
 
   raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-
-  // 1. Click on Car Hood or Trunk
-  const carIntersects = raycaster.intersectObjects([hoodMesh, trunkMesh]);
-  if (carIntersects.length > 0) {
-    const hitObj = carIntersects[0].object;
+  const intersects = raycaster.intersectObjects([hoodMesh, trunkMesh]);
+  if (intersects.length > 0) {
+    const hitObj = intersects[0].object;
     if (hitObj === hoodMesh) {
       carState.hoodOpen = !carState.hoodOpen;
       hoodGroup.rotation.x = carState.hoodOpen ? -Math.PI / 3 : 0;
@@ -372,34 +296,6 @@ window.addEventListener('pointerdown', (e) => {
       carState.trunkOpen = !carState.trunkOpen;
       trunkGroup.rotation.x = carState.trunkOpen ? Math.PI / 3 : 0;
     }
-    return;
-  }
-
-  // 2. Realistic Tree Hit at Exact Point
-  const held = inventoryData[selectedSlot];
-  if (held && held.type === 'axe') {
-    treeList.forEach((t, index) => {
-      const intersects = raycaster.intersectObject(t.trunk);
-      if (intersects.length > 0 && camera.position.distanceTo(t.group.position) < 6) {
-        t.hits++;
-
-        // Swing Hand Animation
-        handGroup.rotation.x = -0.7;
-        setTimeout(() => handGroup.rotation.x = 0, 150);
-
-        // Wood Chip Effect at exact hit point
-        const pt = intersects[0].point;
-        const chip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0xc2b280 }));
-        chip.position.copy(pt);
-        scene.add(chip);
-        setTimeout(() => scene.remove(chip), 800);
-
-        if (t.hits >= 3) {
-          scene.remove(t.group);
-          treeList.splice(index, 1);
-        }
-      }
-    });
   }
 });
 
@@ -410,7 +306,6 @@ function animate() {
   const dt = Math.min(0.05, clock.getDelta());
 
   if (!player.inCar) {
-    // Player Walking Physics
     const speed = 5;
     let moveZ = (moveState.fwd ? 1 : 0) - (moveState.bwd ? 1 : 0);
     let moveX = (moveState.rgt ? 1 : 0) - (moveState.lft ? 1 : 0);
@@ -425,32 +320,35 @@ function animate() {
     player.y += player.velY * dt;
     if (player.y <= 0) { player.y = 0; player.velY = 0; player.onGround = true; }
 
-    playerGroup.position.set(player.x, player.y, player.z);
-    playerGroup.rotation.y = player.yaw;
+    camera.position.set(player.x, player.y + 1.5, player.z);
 
-    camera.position.set(player.x, player.y + 1.4, player.z);
-
-    // Distance Check to Show Enter Car Button
-    if (camera.position.distanceTo(carGroup.position) < 4) {
-      enterCarBtn.style.display = 'block';
-    } else {
-      enterCarBtn.style.display = 'none';
-    }
+    enterCarBtn.style.display = (camera.position.distanceTo(carGroup.position) < 4.5) ? 'block' : 'none';
   } else {
-    // Car Driving Physics
-    if (carState.gas) carState.speed = Math.min(carState.speed + 15 * dt, 25);
-    else if (carState.brake) carState.speed = Math.max(carState.speed - 15 * dt, -10);
-    else carState.speed *= 0.96;
+    // ENGINE LEVEL MAX SPEED CALCULATOR
+    const maxSpeedByLevel = 60 + (engineLevel * 40); // Lvl 1: 100km/h, Lvl 2: 140km/h ...
 
-    if (carState.left) carGroup.rotation.y += 1.5 * dt;
-    if (carState.right) carGroup.rotation.y -= 1.5 * dt;
+    if (carState.gas) carState.speed = Math.min(carState.speed + 20 * dt, maxSpeedByLevel / 3.6);
+    else if (carState.brake) carState.speed = Math.max(carState.speed - 20 * dt, -10);
+    else carState.speed *= 0.97;
+
+    // Steering & Wheel Rotation
+    if (carState.left) carState.steerAngle = Math.min(carState.steerAngle + 3 * dt, 0.8);
+    else if (carState.right) carState.steerAngle = Math.max(carState.steerAngle - 3 * dt, -0.8);
+    else carState.steerAngle *= 0.8;
+
+    carGroup.rotation.y += carState.steerAngle * (carState.speed / 15) * dt;
+    steeringGroup.rotation.z = -carState.steerAngle * 2; // Steering wheel physical rotation
 
     const carFwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
     carGroup.position.addScaledVector(carFwd, carState.speed * dt);
 
-    // Attach Camera Inside Car Driver Seat
-    camera.position.copy(carGroup.position).add(new THREE.Vector3(-0.4, 1.2, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y));
-    playerGroup.position.copy(carGroup.position);
+    // FIRST PERSON INSIDE DRIVER SEAT CAMERA
+    const driverSeatPos = new THREE.Vector3(-0.5, 1.35, -0.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), carGroup.rotation.y);
+    camera.position.copy(carGroup.position).add(driverSeatPos);
+
+    // UI SPEEDOMETER UPDATE
+    document.getElementById('speedVal').textContent = Math.round(Math.abs(carState.speed * 3.6));
+    document.getElementById('engineLvlVal').textContent = `LVL ${engineLevel}`;
   }
 
   camera.rotation.y = player.yaw;
