@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Gorba City - Open World</title>
-<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a1a">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -222,7 +221,7 @@
   /* ===== INVENTORY PANEL ===== */
   #inventory {
     position:fixed; inset:0; z-index:50;
-    background:rgba(0,0,0,0.85);
+    background:rgba(0,0,0,0.92);
     backdrop-filter:blur(20px);
     display:none;
     flex-direction:column;
@@ -304,27 +303,13 @@
   }
   #invStats span { color:#fff; font-weight:600; }
 
-  /* ===== MINIMAP ===== */
-  #minimap {
-    position:fixed; top:60px; right:66px;
-    width:clamp(60px, 12vw, 90px);
-    height:clamp(60px, 12vw, 90px);
-    border-radius:50%;
-    background:rgba(0,0,0,0.5);
-    border:1.5px solid rgba(255,255,255,0.06);
-    z-index:9;
-    overflow:hidden;
-    backdrop-filter:blur(4px);
-    display:none;
-  }
-
   /* ===== INTERACT ===== */
   #interactHint {
     position:fixed; bottom:50%; left:50%;
     transform:translate(-50%, 50%);
     z-index:7;
     color:#fff;
-    background:rgba(0,0,0,0.5);
+    background:rgba(0,0,0,0.6);
     padding:8px 18px;
     border-radius:20px;
     font-size:clamp(11px, 1.6vw, 14px);
@@ -392,11 +377,22 @@
   </div>
 </div>
 
-<!-- ===== MINIMAP ===== -->
-<div id="minimap"></div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ============================================
+// 🔥 DISABLE ALL SAVING - FRESH START EVERY TIME
+// ============================================
+// Clear any cached data
+if ('caches' in window) {
+  caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+}
+// Clear localStorage
+try { localStorage.clear(); } catch(e) {}
+// Clear sessionStorage
+try { sessionStorage.clear(); } catch(e) {}
+
+console.log('🔥 Game started fresh - no saved data!');
+
 // ============================================
 // LOADING SYSTEM
 // ============================================
@@ -412,7 +408,6 @@ const tips = [
   '🏙️ ایجاد ساختمان‌ها...',
   '🌳 کاشت درختان...',
   '☀️ تنظیم نور...',
-  '🚗 افزودن وسایل نقلیه...',
   '🎒 آماده‌سازی موجودی...'
 ];
 
@@ -420,7 +415,7 @@ function updateLoader(val) {
   loadProgress = Math.min(val, 100);
   loaderFill.style.width = loadProgress + '%';
   loaderPercent.textContent = Math.floor(loadProgress) + '%';
-  const tipIdx = Math.min(Math.floor(loadProgress / 18), tips.length - 1);
+  const tipIdx = Math.min(Math.floor(loadProgress / 25), tips.length - 1);
   loaderTips.textContent = tips[tipIdx] || tips[0];
 }
 
@@ -449,9 +444,6 @@ const inventory = {
   },
   getTotalCount() {
     return this.items.reduce((sum, i) => sum + i.count, 0);
-  },
-  hasItem(name) {
-    return this.items.some(i => i.name === name);
   }
 };
 
@@ -467,36 +459,16 @@ const itemTypes = [
   { name: 'سکه', emoji: '🪙', weight: 0.1, color: 0xffd700 },
 ];
 
-function spawnWorldItems() {
-  for (let i = 0; i < 25; i++) {
-    const type = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 3 + Math.random() * 20;
-    const x = Math.cos(angle) * dist;
-    const z = Math.sin(angle) * dist;
-    const gx = Math.round(x + GRID/2);
-    const gz = Math.round(z + GRID/2);
-    if (gx < 0 || gx >= GRID || gz < 0 || gz >= GRID) continue;
-    const y = heightAt(gx, gz) + 0.3;
-    worldItems.push({
-      x, y, z,
-      type: type,
-      mesh: null,
-      bob: Math.random() * Math.PI * 2
-    });
-  }
-}
-
 // ============================================
 // SCENE SETUP
 // ============================================
 updateLoader(5);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x6a9ec4);
-scene.fog = new THREE.FogExp2(0x6a9ec4, 0.004);
+scene.fog = new THREE.FogExp2(0x6a9ec4, 0.0035);
 
 updateLoader(10);
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 250);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 300);
 camera.rotation.order = 'YXZ';
 
 updateLoader(15);
@@ -550,17 +522,13 @@ function smoothHeight(x, z) {
   const dist = Math.hypot(dx, dz);
   let h = 0;
   
-  // Flat city center (radius 10)
   if (dist < 10) h = 0;
   else if (dist < 14) h = (dist - 10) * 0.2;
   else {
-    // Rolling hills
     h = 1.5 + Math.sin(x * 0.045 + z * 0.03) * 2.2;
     h += Math.cos(x * 0.07 - z * 0.05) * 1.5;
     h += Math.sin(x * 0.12 + z * 0.09) * 0.8;
-    // Mountains in distance
     if (dist > 25) h += (dist - 25) * 0.08;
-    // Valley
     if (dist > 10 && dist < 18) h -= 0.5;
     h = Math.max(0, h);
   }
@@ -624,7 +592,7 @@ scene.add(groundGroup);
 
 updateLoader(55);
 // ============================================
-// BUILDINGS (scattered across the world)
+// BUILDINGS
 // ============================================
 const buildingColors = [0xccbb99, 0xbbaa88, 0xddccaa, 0xaa9977, 0xccaa88, 0xddbb99];
 const roofColors = [0x664433, 0x554433, 0x665544, 0x443322, 0x554433, 0x664433];
@@ -650,14 +618,13 @@ function makeBuilding(x, z, w, h, d, color, roofColor) {
   return g;
 }
 
-// Generate buildings across the world
 for (let i = 0; i < 50; i++) {
   const gx = Math.floor(Math.random() * GRID);
   const gz = Math.floor(Math.random() * GRID);
   const dx = gx - center, dz = gz - center;
   const dist = Math.hypot(dx, dz);
-  if (dist < 8) continue; // keep center clear
-  if (dist > 28) continue; // no buildings in mountains
+  if (dist < 8) continue;
+  if (dist > 28) continue;
   const w = 1.5 + Math.random() * 3;
   const d = 1.5 + Math.random() * 3;
   const h = 2 + Math.random() * 8;
@@ -719,7 +686,6 @@ function createItemMesh(type) {
   mesh.castShadow = true;
   g.add(mesh);
   
-  // Glow ring
   const ringMat = new THREE.MeshStandardMaterial({
     color: type.color,
     transparent: true,
@@ -792,4 +758,22 @@ lookArea.addEventListener('pointermove', (e) => {
   lastX = e.clientX;
   lastY = e.clientY;
   player.yaw -= dx * 0.005;
-  player.pitch -= dy * 0
+  player.pitch -= dy * 0.005;
+  player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
+});
+
+// Joystick
+const joystickArea = document.getElementById('joystickArea');
+const joyKnob = document.getElementById('joyKnob');
+let joyActive = false, joyCenter = { x: 0, y: 0 }, joyVec = { x: 0, y: 0 };
+const JOY_MAX = 40;
+
+joystickArea.addEventListener('pointerdown', (e) => {
+  joyActive = true;
+  const r = joystickArea.getBoundingClientRect();
+  joyCenter = { x: r.left + r.width/2, y: r.top + r.height/2 };
+  joystickArea.setPointerCapture(e.pointerId);
+});
+joystickArea.addEventListener('pointerup', () => {
+  joyActive = false;
+  joyVec = { x: 0, y: 0 };
