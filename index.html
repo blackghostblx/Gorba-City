@@ -115,6 +115,8 @@ camera.rotation.order = 'YXZ';
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 window.addEventListener('resize', ()=>{
@@ -123,15 +125,30 @@ window.addEventListener('resize', ()=>{
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// ================= lighting (for real shading/depth) =================
+const hemiLight = new THREE.HemisphereLight(0xffe6c8, 0x1a1030, 0.85);
+scene.add(hemiLight);
+const sunLight = new THREE.DirectionalLight(0xffd9a8, 1.0);
+sunLight.position.set(60,90,-30);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024,1024);
+sunLight.shadow.camera.left=-40; sunLight.shadow.camera.right=40;
+sunLight.shadow.camera.top=40; sunLight.shadow.camera.bottom=-40;
+sunLight.shadow.camera.far=200;
+scene.add(sunLight);
+scene.add(sunLight.target);
+
 // ================= ground (real textured grass, follows camera) =================
 const grassTex = texLoader.load(TEX_GRASS);
 grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
 grassTex.repeat.set(70,70);
-const groundMat = new THREE.MeshBasicMaterial({map:grassTex, fog:true});
+const groundMat = new THREE.MeshLambertMaterial({map:grassTex});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(600,600), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.position.y = -0.03;
+ground.receiveShadow = true;
 scene.add(ground);
+
 
 // ================= fantasy sky (follows camera) =================
 const skyGroup = new THREE.Group();
@@ -230,7 +247,8 @@ leafTex.needsUpdate = true;
 function makeTree(){
   const g = new THREE.Group();
   const th = 2.2+Math.random()*1.6;
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.22,th,7), new THREE.MeshBasicMaterial({map:barkTex}));
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.22,th,7), new THREE.MeshLambertMaterial({map:barkTex}));
+  trunk.castShadow = true; trunk.receiveShadow = true;
   trunk.position.y = th/2;
   g.add(trunk);
   const leafMat = new THREE.MeshBasicMaterial({map:leafTex, transparent:true, alphaTest:0.25, side:THREE.DoubleSide, fog:true});
@@ -248,12 +266,13 @@ function makeCluster(){
   if(type<0.18){
     const h = 6+Math.random()*14;
     const colors=[0x6a3fb8,0x3f6ab8,0xb83f8a];
-    const m = new THREE.Mesh(new THREE.ConeGeometry(3+Math.random()*3,h,5), new THREE.MeshBasicMaterial({color:colors[Math.floor(Math.random()*3)]}));
+    const m = new THREE.Mesh(new THREE.ConeGeometry(3+Math.random()*3,h,5), new THREE.MeshLambertMaterial({color:colors[Math.floor(Math.random()*3)]}));
     m.position.y = h/2;
+    m.castShadow = true; m.receiveShadow = true;
     g.add(m);
   } else if(type<0.36){
     const s = 2+Math.random()*2;
-    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), new THREE.MeshBasicMaterial({color:0x8a6ad0}));
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), new THREE.MeshLambertMaterial({color:0x8a6ad0}));
     m.position.y = 10+Math.random()*14;
     g.userData.island = m;
     g.userData.baseY = m.position.y;
@@ -283,34 +302,34 @@ const SCHEMES = {
 };
 
 function makeLimbSegment(radiusTop,radiusBottom,length,color){
-  return new THREE.Mesh(new THREE.CylinderGeometry(radiusTop,radiusBottom,length,7), new THREE.MeshBasicMaterial({color}));
+  return new THREE.Mesh(new THREE.CylinderGeometry(radiusTop,radiusBottom,length,7), new THREE.MeshLambertMaterial({color}));
 }
 
 function makeCharacter(s){
   const g = new THREE.Group();
 
-  const hips = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.22,0.2), new THREE.MeshBasicMaterial({color:s.pants}));
+  const hips = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.22,0.2), new THREE.MeshLambertMaterial({color:s.pants}));
   hips.position.y = 0.92; g.add(hips);
 
-  const waist = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.22,0.17), new THREE.MeshBasicMaterial({color:s.outfit}));
+  const waist = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.22,0.17), new THREE.MeshLambertMaterial({color:s.outfit}));
   waist.position.y = 1.12; g.add(waist);
 
-  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.36,0.32,0.2), new THREE.MeshBasicMaterial({color:s.outfit}));
+  const chest = new THREE.Mesh(new THREE.BoxGeometry(0.36,0.32,0.2), new THREE.MeshLambertMaterial({color:s.outfit}));
   chest.position.y = 1.38; g.add(chest);
 
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.08,8), new THREE.MeshBasicMaterial({color:s.skin}));
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.08,8), new THREE.MeshLambertMaterial({color:s.skin}));
   neck.position.y = 1.58; g.add(neck);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15,12,12), new THREE.MeshBasicMaterial({color:s.skin}));
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15,12,12), new THREE.MeshLambertMaterial({color:s.skin}));
   head.position.y = 1.75; g.add(head);
 
   if(s.gender==='female'){
-    const pt = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.4,6), new THREE.MeshBasicMaterial({color:s.hair}));
+    const pt = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.4,6), new THREE.MeshLambertMaterial({color:s.hair}));
     pt.position.set(0,1.68,-0.15); pt.rotation.x = Math.PI*0.55; g.add(pt);
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.155,12,12,0,Math.PI*2,0,Math.PI/1.9), new THREE.MeshBasicMaterial({color:s.hair}));
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.155,12,12,0,Math.PI*2,0,Math.PI/1.9), new THREE.MeshLambertMaterial({color:s.hair}));
     cap.position.y = 1.79; g.add(cap);
   } else {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.155,12,12,0,Math.PI*2,0,Math.PI/2.1), new THREE.MeshBasicMaterial({color:s.hair}));
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.155,12,12,0,Math.PI*2,0,Math.PI/2.1), new THREE.MeshLambertMaterial({color:s.hair}));
     cap.position.y = 1.79; g.add(cap);
   }
 
@@ -322,7 +341,7 @@ function makeCharacter(s){
     const fore = makeLimbSegment(0.048,0.042,0.3,s.skin);
     fore.position.y = -0.16-0.31;
     grp.add(fore);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshBasicMaterial({color:s.skin}));
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshLambertMaterial({color:s.skin}));
     hand.position.y = -0.16-0.31-0.18;
     grp.add(hand);
     grp.position.set(sign*0.24,1.5,0);
@@ -339,7 +358,7 @@ function makeCharacter(s){
     const shin = makeLimbSegment(0.06,0.05,0.4,s.pants);
     shin.position.y = -0.21-0.41;
     grp.add(shin);
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11,0.08,0.22), new THREE.MeshBasicMaterial({color:s.shoe}));
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11,0.08,0.22), new THREE.MeshLambertMaterial({color:s.shoe}));
     shoe.position.set(0,-0.21-0.41-0.22,0.04);
     grp.add(shoe);
     grp.position.set(sign*0.1,0.92,0);
@@ -354,8 +373,8 @@ function makeCharacter(s){
 function makeCarExterior(){
   const g = new THREE.Group();
   const paint = 0xff6a1a;
-  const paintMat = new THREE.MeshBasicMaterial({color:paint});
-  const darkMat = new THREE.MeshBasicMaterial({color:0x14100c});
+  const paintMat = new THREE.MeshLambertMaterial({color:paint});
+  const darkMat = new THREE.MeshLambertMaterial({color:0x14100c});
   const glassMat = new THREE.MeshBasicMaterial({color:0x1c2430});
   const chromeMat = new THREE.MeshBasicMaterial({color:0xcfd6dc});
 
@@ -399,7 +418,7 @@ function makeCarExterior(){
 
   const wheelGeo = new THREE.CylinderGeometry(0.36,0.36,0.3,14);
   const hubMat = chromeMat;
-  const tireMat = new THREE.MeshBasicMaterial({color:0x111111});
+  const tireMat = new THREE.MeshLambertMaterial({color:0x111111});
   [[-0.95,0.36,1.3],[0.95,0.36,1.3],[-0.95,0.36,-1.3],[0.95,0.36,-1.3]].forEach(p=>{
     const w = new THREE.Mesh(wheelGeo, tireMat);
     w.rotation.z = Math.PI/2; w.position.set(p[0],p[1],p[2]); g.add(w);
@@ -432,6 +451,7 @@ function makeCarExterior(){
 
 const carExt = makeCarExterior();
 carExt.position.set(0,0,0);
+carExt.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
 scene.add(carExt);
 
 let character = null;
@@ -503,6 +523,7 @@ function choose(genderKey){
   character = makeCharacter(scheme);
   character.position.set(-3,0,3.2);
   character.rotation.y = Math.PI*0.15;
+  character.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
   scene.add(character);
   genderEl.style.display='none';
   skipEl.style.display='block';
@@ -511,10 +532,14 @@ function choose(genderKey){
 document.getElementById('pickFemale').addEventListener('click', ()=>choose('female'));
 document.getElementById('pickMale').addEventListener('click', ()=>choose('male'));
 
+// ================= real car state (player fully controls this) =================
+let carX = 0, carZ = 0, carHeading = 0, carSpeed = 0;
+
 function goToDriving(){
   if(character) character.visible=false;
   carExt.visible=false;
-  camera.position.set(0,1.05,0.35);
+  carX = 0; carZ = 0; carHeading = 0; carSpeed = 0;
+  camera.position.set(carX,1.05,carZ);
   camera.rotation.set(0,0,0);
   camera.add(interiorGroup);
   skipEl.style.display='none';
@@ -536,16 +561,17 @@ function bindBtn(el, key){
 }
 bindBtn(gasBtn,'gas'); bindBtn(brakeBtn,'brake'); bindBtn(leftBtn,'left'); bindBtn(rightBtn,'right');
 
-let speed = 0;
-const MAX_SPEED = 30;
-const ACCEL = 13;
-const BRAKE_DECEL = 24;
-const FRICTION = 5.5;
+const MAX_SPEED = 22;
+const ACCEL = 9;
+const BRAKE_DECEL = 16;
+const FRICTION = 4.5;
+const MAX_TURN_RATE = 1.5; // rad/sec, real cars only turn while actually moving
 let steer = 0, steerTarget = 0;
 
 // ================= animate =================
 function lerpV3(a,b,t){ return a.clone().lerp(b,t); }
 const tmpObj = new THREE.Object3D();
+const sunOffset = new THREE.Vector3(60,90,-30);
 
 function animate(){
   requestAnimationFrame(animate);
@@ -556,6 +582,9 @@ function animate(){
   skyGroup.position.copy(camera.position);
   ground.position.x = camera.position.x;
   ground.position.z = camera.position.z;
+  sunLight.position.set(camera.position.x+sunOffset.x, sunOffset.y, camera.position.z+sunOffset.z);
+  sunLight.target.position.set(camera.position.x, 0, camera.position.z);
+  sunLight.target.updateMatrixWorld();
 
   clusters.forEach(g=>{
     if(g.userData.island){
@@ -574,31 +603,42 @@ function animate(){
   else if(gameState==='walk'){
     const dur=1.3, t=Math.min(1,stateTime/dur);
     if(character){
-      const start = new THREE.Vector3(-3,0,3.2), end = new THREE.Vector3(-1.3,0,1.1);
+      const start = new THREE.Vector3(-3,0,3.2), end = new THREE.Vector3(-1.35,0,1.15);
       character.position.x = start.x+(end.x-start.x)*t;
       character.position.z = start.z+(end.z-start.z)*t;
       character.position.y = Math.abs(Math.sin(stateTime*10))*0.05;
     }
-    if(t>=1){ gameState='enter'; stateTime=0; }
+    if(t>=1){ gameState='openDoor'; stateTime=0; }
   }
-  else if(gameState==='enter'){
-    const dur=1.3, t=Math.min(1,stateTime/dur);
-    const doorPivot = carExt.userData.doorPivot;
-    if(t<0.5){
-      doorPivot.rotation.y = -1.3*(t/0.5);
-      if(character){
-        character.position.x = -1.3+(-0.97-(-1.3))*(t/0.5);
-        character.position.z = 1.1+(0.6-1.1)*(t/0.5);
-        character.scale.setScalar(1-0.1*(t/0.5));
-      }
-    } else {
-      if(character) character.visible=false;
-      doorPivot.rotation.y = -1.3*(1-((t-0.5)/0.5));
+  else if(gameState==='openDoor'){
+    // door swings open smoothly, character waits beside it
+    const dur=0.7, t=Math.min(1,stateTime/dur);
+    const ease = 1-Math.pow(1-t,3);
+    carExt.userData.doorPivot.rotation.y = -1.35*ease;
+    if(t>=1){ gameState='sit'; stateTime=0; }
+  }
+  else if(gameState==='sit'){
+    // character steps into the doorway and lowers into the seat
+    const dur=1.0, t=Math.min(1,stateTime/dur);
+    const ease = t*t*(3-2*t);
+    if(character){
+      character.position.x = -1.35+(-0.55-(-1.35))*ease;
+      character.position.z = 1.15+(0.55-1.15)*ease;
+      character.position.y = -0.32*ease;
+      character.rotation.y = Math.PI*0.15 + (Math.PI*0.5-Math.PI*0.15)*ease;
+      character.rotation.x = 0.35*ease;
     }
+    if(t>=1){ gameState='closeDoor'; stateTime=0; }
+  }
+  else if(gameState==='closeDoor'){
+    const dur=0.6, t=Math.min(1,stateTime/dur);
+    const ease = t*t;
+    carExt.userData.doorPivot.rotation.y = -1.35*(1-ease);
+    if(t>0.5 && character) character.visible=false;
     if(t>=1){ gameState='transition'; stateTime=0; }
   }
   else if(gameState==='transition'){
-    const dur=1.5, t=Math.min(1,stateTime/dur);
+    const dur=1.4, t=Math.min(1,stateTime/dur);
     const startPos = new THREE.Vector3(-2.6,1.5,4.2);
     const endPos = new THREE.Vector3(0,1.05,0.35);
     camera.position.copy(lerpV3(startPos,endPos,t));
@@ -608,30 +648,35 @@ function animate(){
     if(t>=1){ carExt.visible=false; goToDriving(); }
   }
   else if(gameState==='driving'){
+    // --- real car physics: the player fully controls heading & speed ---
     steerTarget = pressing.left ? -1 : (pressing.right ? 1 : 0);
     steer += (steerTarget-steer)*Math.min(1,dt*6);
 
-    if(pressing.gas) speed = Math.min(MAX_SPEED, speed+ACCEL*dt);
-    else if(pressing.brake) speed = Math.max(0, speed-BRAKE_DECEL*dt);
-    else speed = Math.max(0, speed-FRICTION*dt);
+    if(pressing.gas) carSpeed = Math.min(MAX_SPEED, carSpeed+ACCEL*dt);
+    else if(pressing.brake){
+      if(carSpeed > 0.05) carSpeed = Math.max(0, carSpeed-BRAKE_DECEL*dt);
+      else carSpeed = Math.max(-MAX_SPEED*0.4, carSpeed-ACCEL*0.6*dt);
+    } else {
+      if(carSpeed>0) carSpeed = Math.max(0, carSpeed-FRICTION*dt);
+      else if(carSpeed<0) carSpeed = Math.min(0, carSpeed+FRICTION*dt);
+    }
 
-    camera.position.z -= speed*dt;
+    const speedFactor = Math.min(1, Math.abs(carSpeed)/4.5);
+    carHeading += steer*MAX_TURN_RATE*speedFactor*dt*(carSpeed<0?-1:1);
 
-    const lateral = steer*(ROAD_WIDTH/2-1.3);
-    const cx = curveX(camera.position.z);
-    camera.position.x = cx + lateral;
+    carX += Math.sin(carHeading)*carSpeed*dt;
+    carZ -= Math.cos(carHeading)*carSpeed*dt;
 
-    const dz=1;
-    const heading = Math.atan2(curveX(camera.position.z-dz)-curveX(camera.position.z+dz), 2*dz);
-    camera.rotation.y = heading + steer*0.05;
-    camera.rotation.z = -steer*0.08;
+    camera.position.set(carX, 1.05, carZ);
+    camera.rotation.y = carHeading;
+    camera.rotation.z = -steer*0.06;
     camera.rotation.x = 0;
 
-    wheelGroup.rotation.z = steer*1.4;
-    speedTag.textContent = Math.round(speed*3.6) + ' km/h';
+    wheelGroup.rotation.z = steer*1.3;
+    speedTag.textContent = Math.round(Math.abs(carSpeed)*3.6) + ' km/h' + (carSpeed<-0.05?' (دنده عقب)':'');
 
     segments.forEach(seg=>{
-      if(seg.zStart > camera.position.z + SEG_LEN){
+      if(seg.zStart > carZ + SEG_LEN){
         const newZStart = frontZ, newZEnd = frontZ-SEG_LEN;
         seg.mesh.geometry.dispose();
         seg.mesh.geometry = buildRoadRibbon(newZStart,newZEnd,SEG_STEPS);
@@ -639,8 +684,8 @@ function animate(){
       }
     });
     clusters.forEach(g=>{
-      if(g.position.z > camera.position.z+40){
-        g.position.z = camera.position.z - (250+Math.random()*180);
+      if(g.position.z > carZ+40){
+        g.position.z = carZ - (250+Math.random()*180);
         const side = Math.random()<0.5?-1:1;
         const dist = 7+Math.random()*20;
         g.position.x = curveX(g.position.z)+side*dist;
